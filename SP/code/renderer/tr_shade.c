@@ -199,7 +199,6 @@ static void R_DrawStripElements( int numIndexes, const glIndex_t *indexes, void 
 #if defined(AMIGAOS) || defined(MORPHOS)
 
 static UWORD ElementIndex[4096];
-//extern UWORD *ElementIndex;
 
 static void R_DrawStripElementsAmiga( int numIndexes, const glIndex_t *indexes )
 {
@@ -367,7 +366,9 @@ R_BindAnimatedImage
 
 =================
 */
-//static // used by altivec - Cowcat
+#if !idppc_altivec // Cowcat
+static
+#endif
 void R_BindAnimatedImage( textureBundle_t *bundle ) {
 	int64_t index;
 
@@ -542,7 +543,8 @@ t1 = most downstream according to spec
 */
 #if !defined(AMIGAOS)
 
-static void DrawMultitextured( shaderCommands_t *input, int stage ) {
+static void DrawMultitextured( shaderCommands_t *input, int stage )
+{
 	shaderStage_t   *pStage;
 
 	pStage = tess.xstages[stage];
@@ -819,7 +821,8 @@ static void ProjectDlightTexture_scalar( void )
 	}
 }
 
-static void ProjectDlightTexture( void ) {
+static void ProjectDlightTexture( void )
+{
 #if idppc_altivec
 	if (com_altivec->integer) {
 		// must be in a separate translation unit or G3 systems will crash.
@@ -1306,7 +1309,8 @@ void SetIteratorFog( void ) {
 /*
 ** RB_IterateStagesGeneric
 */
-static void RB_IterateStagesGeneric( shaderCommands_t *input ) {
+static void RB_IterateStagesGeneric( shaderCommands_t *input )
+{
 	int stage;
 
 	for ( stage = 0; stage < MAX_SHADER_STAGES; stage++ )
@@ -1320,7 +1324,10 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input ) {
 		ComputeColors( pStage );
 		ComputeTexCoords( pStage );
 
-		if ( !setArraysOnce ) {
+		#if !defined(AMIGAOS)
+
+		if ( !setArraysOnce )
+		{
 			qglEnableClientState( GL_COLOR_ARRAY );
 			qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors );
 		}
@@ -1328,19 +1335,17 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input ) {
 		//
 		// do multitexture
 		//
-
-		#if !defined(AMIGAOS)
 		if ( pStage->bundle[1].image[0] != 0 )
 		{
 			DrawMultitextured( input, stage );
 		}
 
 		else
-		#endif
 		{
 			int fadeStart, fadeEnd;
 
-			if ( !setArraysOnce ) {
+			if ( !setArraysOnce )
+			{
 				qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[0] );
 			}
 
@@ -1405,8 +1410,107 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input ) {
 			//
 			R_DrawElements( input->numIndexes, input->indexes );
 		}
+
+		#else
+
+		if ( !setArraysOnce )
+		{
+			qglEnableClientState( GL_COLOR_ARRAY );
+			qglColorPointer( 4, GL_UNSIGNED_BYTE, 0, input->svars.colors );
+			qglTexCoordPointer( 2, GL_FLOAT, 0, input->svars.texcoords[0] );
+		}
+
+		int fadeStart, fadeEnd;
+
+		//
+		// set state
+		//
+		R_BindAnimatedImage( &pStage->bundle[0] );
+
+			#if 0 // Cowcat
+
+			// Ridah, per stage fogging (detail textures)
+			if ( tess.shader->noFog && pStage->isFogged )
+			{
+				R_FogOn();
+			}
+			
+			else if ( tess.shader->noFog && !pStage->isFogged )
+			{
+				R_FogOff(); // turn it back off
+			}
+
+			else if ( backEnd.projection2D )
+			{
+				R_FogOff();
+			}
+
+			else // make sure it's on
+			{
+				R_FogOn();
+			}
+			// done.
+
+			#endif
+
+			//----(SA)	fading model stuff
+			fadeStart = backEnd.currentEntity->e.fadeStartTime;
+
+			if ( fadeStart )
+			{
+				fadeEnd = backEnd.currentEntity->e.fadeEndTime;
+
+				if ( fadeStart > tr.refdef.time ) {       // has not started to fade yet
+					GL_State( pStage->stateBits );
+				}
+
+				else
+				{
+					int i;
+					unsigned int tempState;
+					float alphaval;
+
+					if ( fadeEnd < tr.refdef.time ) {     // entity faded out completely
+						continue;
+					}
+
+					alphaval = (float)( fadeEnd - tr.refdef.time ) / (float)( fadeEnd - fadeStart );
+
+					tempState = pStage->stateBits;
+					// remove the current blend, and don't write to Z buffer
+					tempState &= ~( GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS | GLS_DEPTHMASK_TRUE );
+					// set the blend to src_alpha, dst_one_minus_src_alpha
+					tempState |= ( GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
+					GL_State( tempState );
+					GL_Cull( CT_FRONT_SIDED );
+
+					// modulate the alpha component of each vertex in the render list
+					for ( i = 0; i < tess.numVertexes; i++ )
+					{
+						tess.svars.colors[i][0] *= alphaval;
+						tess.svars.colors[i][1] *= alphaval;
+						tess.svars.colors[i][2] *= alphaval;
+						tess.svars.colors[i][3] *= alphaval;
+					}
+				}
+			}
+
+			else
+			{
+				GL_State( pStage->stateBits );
+			}
+			//----(SA)	end
+
+		//
+		// draw
+		//
+		R_DrawElements( input->numIndexes, input->indexes );
+
+		#endif
+
 		// allow skipping out to show just lightmaps during development
-		if ( r_lightmap->integer && ( pStage->bundle[0].isLightmap || pStage->bundle[1].isLightmap ) ) {
+		if ( r_lightmap->integer && ( pStage->bundle[0].isLightmap || pStage->bundle[1].isLightmap ) )
+		{
 			break;
 		}
 	}

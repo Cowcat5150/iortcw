@@ -53,7 +53,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifdef __VBCC__
 #pragma amiga-align
 #elif defined(WARPUP)
-#pragma pack(2)
+#pragma pack(push,2)
 #endif
 
 #include <utility/tagitem.h>
@@ -80,27 +80,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifdef __VBCC__
 #pragma default-align
 #elif defined (WARPUP)
-#pragma pack()
+#pragma pack(pop)
 #endif
 
-#endif
-
-#if defined(__GNUC__)
-//typedef void *DIR;
 #endif
 
 DIR *findhandle = NULL;
 
-
-// Used to determine CD Path
-//static char cdPath[MAX_OSPATH];
 
 // Used to determine local installation path
 static char installPath[MAX_OSPATH] = { 0 };
 static char binaryPath[ MAX_OSPATH ] = { 0 };
 
 // Used to determine where to store user-specific files
-static char homePath[MAX_OSPATH] = { 0 }; // cowcat
+static char homePath[MAX_OSPATH] = { 0 };
 
 qboolean Sys_RandomBytes( byte *string, int len )
 {
@@ -190,16 +183,40 @@ int Sys_Milliseconds(void)
 
 #endif
 
-#if defined(__VBCC__) && defined(__PPC__)
-extern float rint(float x);
+#if 0 // function is inlined in cl_cgame.c
+
+#if defined(__PPC__)
+#define round fround
+extern float fround(float x);
 #endif
 
-#if 0 // not used now - Cowcat
 void Sys_SnapVector(float *v)
 {
-	v[0] = rint(v[0]);
-	v[1] = rint(v[1]);
-	v[2] = rint(v[2]);
+	v[0] = round(v[0]);
+	v[1] = round(v[1]);
+	v[2] = round(v[2]);
+}
+
+#endif
+
+#if 0
+
+extern float fnearbyint(float x);
+
+#define fgetenv() ({ float env; asm("mffs %0" : "=f" (env)); env; })
+#define fsetenv(env) ({ double d = (env); asm("mtfsf 0xff, %0" : : "f" (d)); })
+
+void Sys_SnapVector(float *v)
+{
+	float oldround = fgetenv();
+
+	asm("mtfsfi 7,0"); // rounding to-nearest
+
+	v[0] = fnearbyint(v[0]);
+	v[1] = fnearbyint(v[1]);
+	v[2] = fnearbyint(v[2]);
+
+	fsetenv(oldround);
 }
 #endif
 
@@ -246,7 +263,7 @@ void Sys_ListFilteredFiles( const char *basedir, char *subdirs, char *filter, ch
 
 	while ((d = readdir(fdir)) != NULL)
 	{
-		#if 0 // Cowcat
+		#if 0
 		if (search[strlen(search)-1] == '/')
 			Com_sprintf(filename, sizeof(filename), "%s%s", search, d->d_name);
 
@@ -351,7 +368,7 @@ char **Sys_ListFiles( const char *directory, const char *extension, char *filter
 
 	while ((d = readdir(fdir)) != NULL)
 	{
-		#if 0 // Cowcat
+		#if 0
 		if (directory[strlen(directory)-1] == '/')
 			Com_sprintf(search, sizeof(search), "%s%s", directory, d->d_name);
 
@@ -367,8 +384,8 @@ char **Sys_ListFiles( const char *directory, const char *extension, char *filter
 
 		if (*extension)
 		{
-			if ( strlen( d->d_name ) < strlen( extension ) ||
-				Q_stricmp( d->d_name + strlen( d->d_name ) - strlen( extension ), extension ) )
+			if ( strlen( d->d_name ) < extLen ||
+				Q_stricmp( d->d_name + strlen( d->d_name ) - extLen, extension ) )
 			{
 				continue; // didn't match
 			}
@@ -432,17 +449,6 @@ char *Sys_Cwd( void )
 	return cwd;
 }
 
-#if 0
-void Sys_SetDefaultCDPath(const char *path)
-{
-	Q_strncpyz(cdPath, path, sizeof(cdPath));
-}
-
-char *Sys_DefaultCDPath(void)
-{
-	return cdPath;
-}
-#endif
 
 /*
 =================
@@ -517,7 +523,6 @@ char *Sys_DefaultHomePath(void)
 
 	return ""; // assume current dir
 
-	//return homePath; // test
 }
 
 //============================================
@@ -538,7 +543,6 @@ void Sys_Setenv(const char *name, const char *value) // new Cowcat
 {
 	
 }
-
 
 FILE *Sys_FOpen( const char *ospath, const char *mode )
 {

@@ -366,7 +366,7 @@ void IN_Restart(void)
 
 void IN_Init()
 {
-	Com_Printf ("\n------- Input Initialization -------\n");
+	Com_DPrintf ("\n------- Input Initialization -------\n");
 
 	inputport = CreatePort(0, 0);
 
@@ -401,7 +401,7 @@ void IN_Init()
 	inputreq->io_Command = IND_ADDHANDLER;
 	DoIO((struct IORequest *)inputreq);
 
-	Com_Printf ("------------------------------------\n");
+	Com_DPrintf ("------------------------------------\n");
 }
 
 

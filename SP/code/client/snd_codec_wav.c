@@ -24,12 +24,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "client.h"
 #include "snd_codec.h"
 
-// Cowcat
+#if defined (AMIGAOS) || defined (MORPHOS)
+
 #undef LittleShort
 #undef LittleLong
 
-#define LittleShort2(x) ((((uint16_t)(x) & 0xff) << 8 ) | ((uint16_t)(x) >> 8))
-#define LittleLong2(x) (((uint32_t)(x) << 24 ) | (((uint32_t)(x) & 0xff00) << 8 ) | (((uint32_t)(x) & 0x00ff0000) >> 8 ) | ((uint32_t)(x) >> 24))
+// fgetlittle functions inlined with those - Cowcat
 
 #define LittleLong(x)	\
 ({ register uint32_t _x;	\
@@ -45,7 +45,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 		"\n\trlwimi %0,%1,8,16,23" : "=&r" (_x) : "r" ((unsigned short) (x)) ); \
 	_x;	\
 })
-//
+
+#endif
 
 /*
 =================

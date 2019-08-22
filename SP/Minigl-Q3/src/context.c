@@ -13,6 +13,7 @@
  */
 
 #include "sysinc.h"
+#include "vertexarray.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -111,20 +112,17 @@ static GLboolean sys_MaybeOpenVidLibs(void)
 	return GL_TRUE;
 }
 
-
-#if 0 // Disabled for QuakeI/II/III/GLHexen2 - Cowcat
-
 static UWORD *MousePointer = 0;
 
 static void vid_Pointer(struct Window *window)
 {
 	if (!MousePointer)
 	{
-	#ifdef __PPC__
+		#ifdef __PPC__
 		MousePointer = AllocVecPPC(8, MEMF_CLEAR|MEMF_CHIP|MEMF_PUBLIC,0); //OF (8 instead of 12, MEMF_PUBLIC)
-	#else
+		#else
 		MousePointer = AllocVec(8, MEMF_CLEAR|MEMF_CHIP|MEMF_PUBLIC); //OF (idem)
-	#endif
+		#endif
 	}
 
 	if (window)
@@ -145,7 +143,17 @@ static void vid_DeletePointer(struct Window *window)
 	MousePointer = 0;
 }
 
-#endif
+// Cowcat
+void MGLClearPointer(GLcontext context)
+{
+	vid_Pointer(context->w3dWindow);
+}
+
+void MGLEnablePointer(GLcontext context)
+{
+	vid_DeletePointer(context->w3dWindow);
+}
+//
 
 void GLScissor(GLcontext context, GLint x, GLint y, GLsizei width, GLsizei height)
 {
@@ -281,7 +289,7 @@ static void vid_CloseDisplay(GLcontext context)
 		context->Buffers[i] = NULL;
 	}
 
-	//vid_DeletePointer(context->w3dWindow); // Cowcat
+	vid_DeletePointer(context->w3dWindow);
 
 	if (context->w3dWindow)
 	{
@@ -468,7 +476,7 @@ static GLboolean vid_ReopenDisplay(GLcontext context, int w, int h)
 	W3D_FreeZBuffer(context->w3dContext);
 	W3D_AllocZBuffer(context->w3dContext);
 
-	// vid_Pointer(context->w3dWindow); // Cowcat
+	vid_Pointer(context->w3dWindow);
 					 
 	return GL_TRUE;
 
@@ -686,7 +694,7 @@ static GLboolean vid_OpenDisplay(GLcontext context, int pw, int ph, ULONG id)
 	*/
 
 	W3D_SetState(context->w3dContext, W3D_DITHERING,    W3D_ENABLE);
-	//W3D_SetState(context->w3dContext, W3D_SCISSOR,    W3D_ENABLE); // disabled for Q3
+	//W3D_SetState(context->w3dContext, W3D_SCISSOR,    W3D_ENABLE); // Cowcat
 	W3D_SetState(context->w3dContext, W3D_GOURAUD,	    W3D_ENABLE);
 	W3D_SetState(context->w3dContext, W3D_PERSPECTIVE,  W3D_ENABLE);
 
@@ -743,7 +751,7 @@ static GLboolean vid_OpenDisplay(GLcontext context, int pw, int ph, ULONG id)
 	context->w3dAlphaFormat = W3D_A4R4G4B4;
 	context->w3dBytesPerTexel = 2;
 
-	// vid_Pointer(context->w3dWindow); // Cowcat
+	vid_Pointer(context->w3dWindow);
 					 
 	return GL_TRUE;
 
@@ -772,8 +780,6 @@ Duh:
 	return GL_FALSE;
 }
 
-//#include "vertexarray.h"
-
 static void vid_CloseWindow(GLcontext context)
 {
 	if (!context)
@@ -781,8 +787,6 @@ static void vid_CloseWindow(GLcontext context)
 
 	if (context->w3dContext)
 	{
-		//GLClear( context, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); // test Cowcat
-
 		W3D_FreeZBuffer(context->w3dContext);
 		tex_FreeTextures(context);
 		W3D_DestroyContext(context->w3dContext);
@@ -804,6 +808,8 @@ static void vid_CloseWindow(GLcontext context)
 	Warp3DBase = NULL;
 
 	#endif
+
+	//vid_DeletePointer(context->w3dWindow); // maybe - Cowcat
 
 	if (context->w3dWindow)
 	{ 
@@ -838,7 +844,7 @@ static GLboolean vid_OpenWindow(GLcontext context, int w, int h)
 		{WA_InnerHeight,	 h}, //
 		{WA_Left,		 90},
 		{WA_Top,		 60},
-		{WA_Title,		 (ULONG)"iortcw"},
+		//{WA_Title,		 (ULONG)"Quake3"}, // Cowcat
 		{WA_SimpleRefresh,	 TRUE},
 		{WA_NoCareRefresh,	 TRUE},
 		{WA_DragBar,		 TRUE},
@@ -942,8 +948,6 @@ static GLboolean vid_OpenWindow(GLcontext context, int w, int h)
 		goto Duh;
 	}
 
-	
-
 	/*
 	** Set up a few initial states
 	** We always enable scissoring and dithering, since it looks better
@@ -952,9 +956,7 @@ static GLboolean vid_OpenWindow(GLcontext context, int w, int h)
 	*/
 
 	W3D_SetState(context->w3dContext, W3D_DITHERING,    W3D_ENABLE);
-	//W3D_SetState(context->w3dContext, W3D_SCISSOR,    W3D_ENABLE); // do not enable - 
-									 // half rendered ui models + black bar on top window in Q3 - Cowcat
-
+	//W3D_SetState(context->w3dContext, W3D_SCISSOR,    W3D_ENABLE); // Cowcat
 	W3D_SetState(context->w3dContext, W3D_GOURAUD,	    W3D_ENABLE);
 	W3D_SetState(context->w3dContext, W3D_PERSPECTIVE,  W3D_ENABLE);
 
@@ -992,6 +994,8 @@ static GLboolean vid_OpenWindow(GLcontext context, int w, int h)
 	context->w3dFormat = W3D_R5G6B5;
 	context->w3dAlphaFormat = W3D_A4R4G4B4;
 	context->w3dBytesPerTexel = 2;
+
+	//vid_Pointer(context->w3dWindow); // maybe - Cowcat 
 
 	return GL_TRUE;
 
@@ -1320,6 +1324,7 @@ void MGLEnableSync(GLcontext context, GLboolean enable)
 	context->DoSync = enable;
 }
 
+
 void MGLSwitchDisplay(GLcontext context)
 {
 	int nowbuf = context->BufNr;
@@ -1346,9 +1351,8 @@ void MGLSwitchDisplay(GLcontext context)
 		context->Buffers[nowbuf]->sb_DBufInfo->dbi_SafeMessage.mn_ReplyPort = NULL;
 
 		while (!ChangeScreenBuffer(context->w3dScreen, context->Buffers[nowbuf]));
-		
-		// Make BufNr the new draw area
 
+		// Make BufNr the new draw area
 		W3D_SetDrawRegion(context->w3dContext, context->Buffers[context->BufNr]->sb_BitMap, 0, &(context->scissor));
 	
 		if (context->DoSync)
@@ -1568,6 +1572,9 @@ GLboolean MGLInitContext(GLcontext context)
 	context->ArrayPointer.vertexstride = sizeof(MGLVertex);
 	context->ArrayPointer.vertexmode = W3D_VERTEX_F_F_D;
 
+	// Set vertexarrays properly - Cowcat
+	Set_W3D_VertexPointer(context->w3dContext, (void *)&context->ArrayPointer.verts, sizeof(MGLVertex), W3D_VERTEX_F_F_D, 0);
+
 	context->ArrayPointer.lockfirst = 0;
 	context->ArrayPointer.locksize = 0;
 	context->ArrayPointer.transformed = 0;
@@ -1617,6 +1624,7 @@ GLboolean MGLInitContext(GLcontext context)
 	return GL_TRUE;
 }
 
+
 void *MGLCreateContext(int offx, int offy, int w, int h)
 {
 	GLcontext context;
@@ -1665,10 +1673,9 @@ void *MGLCreateContext(int offx, int offy, int w, int h)
 	}
 
 	GLDepthRange(context, 0.0, 1.0);
-	
 	GLViewport(context, offx, offy, w, h);
 	GLClearColor(context, 1.0, 1.0, 1.0, 1.0);
-	
+
 	// Hey, folks, I can do that because I know what I am doing.
 	// You should never read fields from the W3D context that are not
 	// marked as readable...

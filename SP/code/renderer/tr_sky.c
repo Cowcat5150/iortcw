@@ -377,6 +377,8 @@ static int sky_texorder[6] = {0,2,1,3,4,5};
 static vec3_t s_skyPoints[SKY_SUBDIVISIONS + 1][SKY_SUBDIVISIONS + 1];
 static float s_skyTexCoords[SKY_SUBDIVISIONS + 1][SKY_SUBDIVISIONS + 1][2];
 
+#if 1
+
 static void DrawSkySide( struct image_s *image, const int mins[2], const int maxs[2] ) {
 	int s, t;
 
@@ -438,6 +440,41 @@ static void DrawSkySide( struct image_s *image, const int mins[2], const int max
 		qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
 #endif
 }
+
+#else // test Cowcat
+
+static void DrawSkySide( struct image_s *image, const int mins[2], const int maxs[2] )
+{
+	int s, t, i = 0;
+	int size;
+	glIndex_t *indices;
+
+	size = (maxs[1]-mins[1]) * (maxs[0] - mins[0] + 1);
+	indices = ri.Hunk_AllocateTempMemory(sizeof(glIndex_t) * size);
+
+	GL_Bind( image );
+
+	for ( t = mins[1] + HALF_SKY_SUBDIVISIONS; t < maxs[1] + HALF_SKY_SUBDIVISIONS; t++ )
+	{
+		for ( s = mins[0] + HALF_SKY_SUBDIVISIONS; s <= maxs[0] + HALF_SKY_SUBDIVISIONS; s++ )
+		{
+			indices[i++] = t * (SKY_SUBDIVISIONS+1) + s;
+			indices[i++] = (t+1) * (SKY_SUBDIVISIONS+1) + s;
+			
+		}
+	}
+
+	qglDisableClientState(GL_COLOR_ARRAY);
+	qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	qglTexCoordPointer(2, GL_FLOAT, 0, s_skyTexCoords);
+	qglVertexPointer(3, GL_FLOAT, 0, s_skyPoints);
+	qglDrawElements(GL_TRIANGLE_STRIP, i, GL_INDEX_TYPE, indices);
+	ri.Hunk_FreeTempMemory(indices);
+}
+
+#endif
+
+#if 1
 
 static void DrawSkySideInner( struct image_s *image, const int mins[2], const int maxs[2] ) {
 	int s, t;
@@ -507,6 +544,45 @@ static void DrawSkySideInner( struct image_s *image, const int mins[2], const in
 		qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
 #endif
 }
+
+#else // test Cowcat
+
+static void DrawSkySideInner( struct image_s *image, const int mins[2], const int maxs[2] )
+{
+	int s, t, i = 0;
+	int size;
+	glIndex_t *indices;
+
+	size = (maxs[1]-mins[1]) * (maxs[0] - mins[0] + 1);
+	indices = ri.Hunk_AllocateTempMemory(sizeof(glIndex_t) * size);
+
+	GL_Bind( image );
+
+	qglBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+	qglEnable( GL_BLEND );
+	GL_TexEnv( GL_MODULATE );
+
+	for ( t = mins[1] + HALF_SKY_SUBDIVISIONS; t < maxs[1] + HALF_SKY_SUBDIVISIONS; t++ )
+	{
+		for ( s = mins[0] + HALF_SKY_SUBDIVISIONS; s <= maxs[0] + HALF_SKY_SUBDIVISIONS; s++ )
+		{
+			indices[i++] = t * (SKY_SUBDIVISIONS+1) + s;
+			indices[i++] = (t+1) * (SKY_SUBDIVISIONS+1) + s;
+			
+		}
+	}
+
+	qglDisableClientState(GL_COLOR_ARRAY);
+	qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	qglTexCoordPointer(2, GL_FLOAT, 0, s_skyTexCoords);
+	qglVertexPointer(3, GL_FLOAT, 0, s_skyPoints);
+	qglDrawElements(GL_TRIANGLE_STRIP, i, GL_INDEX_TYPE, indices);
+	ri.Hunk_FreeTempMemory(indices);
+
+	qglDisable( GL_BLEND );
+}
+
+#endif
 
 static void DrawSkyBox( shader_t *shader ) {
 	int i;

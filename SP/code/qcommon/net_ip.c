@@ -65,8 +65,6 @@ static qboolean	winsockInitialized = qfalse;
 
 
 #include <sys/socket.h>
-
-
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <netdb.h>
@@ -101,7 +99,7 @@ typedef int SOCKET;
 #define socketError	errno
 #endif
 
-typedef int ioctlarg_t;
+typedef int	ioctlarg_t;
 
 #endif
 
@@ -111,7 +109,7 @@ static int networkingEnabled = 0;
 #define NET_ENABLEV4		0x01
 
 #if !defined(AMIGAOS) && !defined(MORPHOS)
-#define NET_ENABLEV6		0x02
+#define NET_ENABLEV6		0x02
 // if this flag is set, always attempt ipv6 connections instead of ipv4 if a v6 address is found.
 #define NET_PRIOV6		0x04
 #endif
@@ -425,7 +423,7 @@ static qboolean Sys_StringToSockaddr(const char *s, struct sockaddr *sadr, int s
 				search->ai_addrlen = sadr_len;
 
 			memcpy(sadr, search->ai_addr, search->ai_addrlen);
-			freeaddrinfo(res); // Cowcat search ??
+			freeaddrinfo(res);
 			
 			return qtrue;
 		}
@@ -628,9 +626,9 @@ qboolean NET_IsLocalAddress( netadr_t adr )
 
 /*
 ==================
-Net_GetPacket
+Sys_GetPacket
 
-Recive one packet
+Never called by the game logic, just the system event queing
 ==================
 */
 
@@ -1020,7 +1018,7 @@ SOCKET NET_IPSocket( char *net_interface, int port, int *err )
 #if defined(MORPHOS)
 	if( ioctlsocket( newsocket, FIONBIO, (char *)&_true ) == SOCKET_ERROR ) // Cowcat
 #else
-	if( ioctlsocket( newsocket, FIONBIO, &_true ) == SOCKET_ERROR )
+	if( ioctlsocket( newsocket, FIONBIO, (u_long *)&_true ) == SOCKET_ERROR )
 #endif
 	{
 		Com_Printf( "WARNING: NET_IPSocket: ioctl FIONBIO: %s\n", NET_ErrorString() );
@@ -1488,12 +1486,10 @@ void NET_OpenSocks( int port )
 NET_GetLocalAddress
 =====================
 */
-void NET_AddLocalAddress(char *ifname, struct sockaddr *addr, struct sockaddr *netmask)
+static void NET_AddLocalAddress(char *ifname, struct sockaddr *addr, struct sockaddr *netmask)
 {
 	int 		addrlen;
 	sa_family_t	family;
-
-	//Com_Printf("%s %p %p %p\n", __FUNCTION__, ifname, addr, netmask);
 
 	// only add addresses that have all required info.
 	if(!addr || !netmask || !ifname)
@@ -1556,12 +1552,14 @@ void NET_GetLocalAddress(void)
 
 #else
 
-void NET_GetLocalAddress( void ) // changed here - Cowcat
+static void NET_GetLocalAddress( void )
 {
 	char			hostname[256];
 	struct addrinfo		hint;
 	struct addrinfo 	*res = NULL;
 	
+	numIP = 0;
+
 	if(gethostname( hostname, 256 ) == SOCKET_ERROR)
 		return;
 
@@ -2150,7 +2148,7 @@ int getnameinfo(const struct sockaddr *sa, socklen_t salen, char *node, socklen_
 
 	//Com_Printf("DEBUG: buf is '%s'", buf);
 
-	if ( (strlen(buf) <= nodelen) && (strlen(buf) < sizeof(buf)) ); // was < 32 - Cowcat
+	if ( (strlen(buf) <= nodelen) && (strlen(buf) < sizeof(buf)) ) // was < 32 - Cowcat
 	{
 		strncpy(node, buf, strlen(buf) + 1);
 		

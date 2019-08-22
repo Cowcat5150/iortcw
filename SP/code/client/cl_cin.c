@@ -1707,8 +1707,6 @@ void CL_PlayCinematic_f( void ) {
 
 	Com_DPrintf( "CL_PlayCinematic_f\n" );
 
-	#if !defined(AMIGAOS)
-
 	if ( clc.state == CA_CINEMATIC ) {
 		SCR_StopCinematic();
 	}
@@ -1739,8 +1737,6 @@ void CL_PlayCinematic_f( void ) {
 			SCR_RunCinematic();
 		} while ( cinTable[currentHandle].buf == NULL && cinTable[currentHandle].status == FMV_PLAY );        // wait for first frame (load codebook and sound)
 	}
-
-	#endif
 }
 
 

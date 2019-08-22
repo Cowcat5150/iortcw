@@ -51,7 +51,7 @@ Handles byte ordering and avoids alignment errors
 ==============================================================================
 */
 
-int oldsize = 0;
+//int oldsize = 0; // Cowcat
 
 void MSG_initHuffman( void );
 
@@ -119,7 +119,7 @@ void MSG_WriteBits( msg_t *msg, int value, int bits )
 {
 	int i;
 
-	oldsize += bits;
+	//oldsize += bits;
 
 	if ( msg->overflowed ) {
 		return;
@@ -307,7 +307,7 @@ int MSG_ReadBits( msg_t *msg, int bits )
 			msg->readcount += 4;
 			msg->bit += 32;
 
-			#else
+			#else // Cowcat
 
 			unsigned int *ip = (unsigned int *)&msg->data[msg->readcount];
 			value = LittleLong(*ip);
@@ -574,7 +574,10 @@ char *MSG_ReadString( msg_t *msg ) {
 	l = 0;
 	do {
 		c = MSG_ReadByte( msg );      // use ReadByte so -1 is out of bounds
-		if ( c == -1 || c == 0 ) {
+
+		//if ( c == -1 || c == 0 )
+		if ( c <= 0) // ec-/Quake3e
+		{
 			break;
 		}
 		// translate all fmt spec to avoid crash bugs
@@ -604,7 +607,10 @@ char *MSG_ReadBigString( msg_t *msg ) {
 	l = 0;
 	do {
 		c = MSG_ReadByte( msg );      // use ReadByte so -1 is out of bounds
-		if ( c == -1 || c == 0 ) {
+		
+		//if ( c == -1 || c == 0 )
+		if ( c <= 0) // ec-/Quake3e
+		{
 			break;
 		}
 		// translate all fmt spec to avoid crash bugs
@@ -634,7 +640,10 @@ char *MSG_ReadStringLine( msg_t *msg ) {
 	l = 0;
 	do {
 		c = MSG_ReadByte( msg );      // use ReadByte so -1 is out of bounds
-		if ( c == -1 || c == 0 || c == '\n' ) {
+
+		//if ( c == -1 || c == 0 || c == '\n' )
+		if ( c <= 0 || c == '\n' ) // ec-/Quake3e
+		{
 			break;
 		}
 		// translate all fmt spec to avoid crash bugs
@@ -724,6 +733,7 @@ int MSG_ReadDeltaKey( msg_t *msg, int key, int oldV, int bits ) {
 	return oldV;
 }
 
+#if 0 // not used? - Cowcat
 void MSG_WriteDeltaKeyFloat( msg_t *msg, int key, float oldV, float newV ) {
 	floatint_t fi;
 	if ( oldV == newV ) {
@@ -744,7 +754,7 @@ float MSG_ReadDeltaKeyFloat( msg_t *msg, int key, float oldV ) {
 	}
 	return oldV;
 }
-
+#endif
 
 /*
 ============================================================================
@@ -780,7 +790,7 @@ void MSG_WriteDeltaUsercmdKey( msg_t *msg, int key, usercmd_t *from, usercmd_t *
 		 from->wolfkick == to->wolfkick &&
 		 from->cld == to->cld ) {                   // NERVE - SMF
 		MSG_WriteBits( msg, 0, 1 );                 // no change
-		oldsize += 7;
+		//oldsize += 7;
 		return;
 	}
 	key ^= to->serverTime;
@@ -1207,7 +1217,7 @@ void MSG_WriteDeltaEntity( msg_t *msg, struct entityState_s *from, struct entity
 
 //	MSG_WriteBits( msg, compressedVector, SMALL_VECTOR_BITS );
 	if ( compressedVector == -1 ) {
-		oldsize += 4;
+		//oldsize += 4;
 		MSG_WriteBits( msg, 1, 1 );          // complete change
 		// we didn't find a fast match so we need to write the entire delta
 		for ( i = 0 ; i + 8 <= numFields ; i += 8 ) {
@@ -1242,7 +1252,7 @@ void MSG_WriteDeltaEntity( msg_t *msg, struct entityState_s *from, struct entity
 
 			if ( fullFloat == 0.0f ) {
 				MSG_WriteBits( msg, 0, 1 );
-				oldsize += FLOAT_INT_BITS;
+				//oldsize += FLOAT_INT_BITS;
 			} else {
 				MSG_WriteBits( msg, 1, 1 );
 				if ( trunc == fullFloat && trunc + FLOAT_INT_BIAS >= 0 &&

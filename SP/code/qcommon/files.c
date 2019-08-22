@@ -1198,7 +1198,10 @@ fileHandle_t FS_FCreateOpenPipeFile( const char *filename ) {
 
 	Com_Printf( S_COLOR_YELLOW "WARNING: Could not create new com_pipefile at -. "
 			"com_pipefile will not be used.\n" );
+
 	f = 0;
+
+	return f;
 
 	#endif
 }
@@ -4461,9 +4464,6 @@ Return qtrue if restarting due to game directory changed, qfalse otherwise
 */
 qboolean FS_ConditionalRestart(int checksumFeed, qboolean disconnect)
 {
-	// #if !defined(AMIGAOS) // disabled until bugfix Amiga render - Cowcat
-	#if 1
-
 	if(fs_gamedirvar->modified)
 	{
 		if(FS_FilenameCompare(lastValidGame, fs_gamedirvar->string) &&
@@ -4484,18 +4484,6 @@ qboolean FS_ConditionalRestart(int checksumFeed, qboolean disconnect)
 		FS_ReorderPurePaks();
 
 	return qfalse;
-
-	#else // old way
-
-	if( fs_gamedirvar->modified || checksumFeed != fs_checksumFeed )
-	{
-		FS_Restart( checksumFeed );
-		return qtrue;
-	}
-
-	return qfalse;
-
-	#endif
 }
 
 /*

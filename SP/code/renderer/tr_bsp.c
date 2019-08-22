@@ -304,6 +304,7 @@ static shader_t *ShaderForShaderNum( int shaderNum, int lightmapNum ) {
 	return shader;
 }
 
+
 // Ridah, optimizations here
 // memory block for use by surfaces
 static byte *surfHunkPtr;
@@ -344,6 +345,7 @@ void *R_GetSurfMemory( int size ) {
 
 	return (void *)retval;
 }
+
 
 /*
 ===============
@@ -508,10 +510,8 @@ static void ParseTriSurf( dsurface_t *ds, drawVert_t *verts, msurface_t *surf, i
 	numVerts = LittleLong( ds->numVerts );
 	numIndexes = LittleLong( ds->numIndexes );
 
-	//tri = ri.Hunk_Alloc( sizeof( *tri ) + numVerts * sizeof( tri->verts[0] )
-	//	+ numIndexes * sizeof( tri->indexes[0] ) );
-	tri = R_GetSurfMemory( sizeof( *tri ) + numVerts * sizeof( tri->verts[0] )
-						   + numIndexes * sizeof( tri->indexes[0] ) );
+	//tri = ri.Hunk_Alloc( sizeof( *tri ) + numVerts * sizeof( tri->verts[0] ) + numIndexes * sizeof( tri->indexes[0] ) );
+	tri = R_GetSurfMemory( sizeof( *tri ) + numVerts * sizeof( tri->verts[0] ) + numIndexes * sizeof( tri->indexes[0] ) );
 
 	tri->surfaceType = SF_TRIANGLES;
 	tri->numVerts = numVerts;

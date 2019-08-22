@@ -38,19 +38,9 @@ If you have questions concerning this license or the applicable additional terms
 
 extern botlib_export_t *botlib_export;
 
-#if 1 // Cowcat
-
 extern qboolean loadCamera( int camNum, const char *name );
 extern void startCamera( int camNum, int time );
 extern qboolean getCameraInfo( int camNum, int time, vec3_t *origin, vec3_t *angles, float *fov );
-
-#else
-
-qboolean loadCamera( int camNum, const char *name ) {}
-void startCamera( int camNum, int time ) {}
-qboolean getCameraInfo( int camNum, int time, vec3_t *origin, vec3_t *angles, float *fov ) {}
-
-#endif
 
 // RF, this is only used when running a local server
 extern void SV_SendMoveSpeedsToGame( int entnum, char *text );
@@ -428,6 +418,7 @@ static int  FloatAsInt( float f ) {
 	return fi.i;
 }
 
+
 /*
 ====================
 CL_CgameSystemCalls
@@ -435,6 +426,9 @@ CL_CgameSystemCalls
 The cgame module is making a system call
 ====================
 */
+
+#define round roundf // Cowcat
+
 intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 	switch ( args[0] ) {
 	case CG_PRINT:
@@ -773,7 +767,6 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 //		Com_Printf( "%s%f\n", (const char*)VMA( 1 ), VMF( 2 ) );
 		return 0;
 
-#if 1 // Cowcat
 	case CG_LOADCAMERA:
 		return loadCamera( args[1], VMA( 2 ) );
 
@@ -795,7 +788,6 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 
 	case CG_GETCAMERAINFO:
 		return getCameraInfo( args[1], args[2], VMA( 3 ), VMA( 4 ), VMA( 5 ) );
-#endif
 
 	case CG_GET_ENTITY_TOKEN:
 		return re.GetEntityToken( VMA( 1 ), args[2] );

@@ -3230,6 +3230,7 @@ void Menu_HandleKey( menuDef_t *menu, int key, qboolean down ) {
 	case K_AUX6:
 	case K_AUX7:
 	case K_AUX8:
+/* // ec-/quake3e - not used
 	case K_AUX9:
 	case K_AUX10:
 	case K_AUX11:
@@ -3238,6 +3239,7 @@ void Menu_HandleKey( menuDef_t *menu, int key, qboolean down ) {
 	case K_AUX14:
 	case K_AUX15:
 	case K_AUX16:
+*/
 	case K_KP_ENTER:
 	case K_ENTER:
 	case K_MOUSE3:

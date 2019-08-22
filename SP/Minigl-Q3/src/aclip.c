@@ -20,7 +20,7 @@
 
 #define LERP(t,a,b) \
 	( (a) + (float)t * ( (b) - (a) ) )
-	
+
 #define CLIP_EPS (1e-7)
 
 #define x1 (a->bx)

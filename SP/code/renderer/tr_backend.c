@@ -29,6 +29,10 @@ If you have questions concerning this license or the applicable additional terms
 #include "tr_local.h"
 #include "qgl.h"
 
+#ifdef AMIGAOS
+//#include <mgl/mglmacros.h>
+#endif
+
 backEndData_t  *backEndData;
 backEndState_t backEnd;
 
@@ -428,6 +432,7 @@ void RB_BeginDrawingView( void ) {
 	// we will need to change the projection matrix before drawing
 	// 2D images again
 	backEnd.projection2D = qfalse;
+	//qglEnable(MGL_PERSPECTIVE_MAPPING); // TEST for minigl - Cowcat
 
 	//
 	// set the modelview matrix for the viewer
@@ -1140,6 +1145,8 @@ void    RB_SetGL2D( void ) {
 	qglDisable( GL_CLIP_PLANE0 ); // Cowcat
 	#endif
 
+	//qglDisable(MGL_PERSPECTIVE_MAPPING); // TEST for minigl - Cowcat
+
 	// set time for 2D shaders
 	backEnd.refdef.time = ri.Milliseconds();
 	backEnd.refdef.floatTime = backEnd.refdef.time * 0.001;
@@ -1222,7 +1229,12 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *
 	if (glcol)
 		qglEnableClientState(GL_COLOR_ARRAY);
 #else
+	#if defined(AMIGAOS)
+	qglBegin( MGL_FLATFAN );
+	#else
 	qglBegin( GL_QUADS );
+	#endif
+
 	qglTexCoord2f( 0.5f / cols,  0.5f / rows );
 	qglVertex2f( x, y );
 	qglTexCoord2f( ( cols - 0.5f ) / cols,  0.5f / rows );
@@ -1238,8 +1250,6 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *
 
 void RE_UploadCinematic( int w, int h, int cols, int rows, const byte *data, int client, qboolean dirty )
 {
-	#if !defined(AMIGAOS)
-
 	GL_Bind( tr.scratchImage[client] );
 
 	// if the scratchImage isn't in the format we want, specify it as a new texture
@@ -1249,7 +1259,11 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, const byte *data, int
 #ifdef USE_OPENGLES
 		qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 #else
-		qglTexImage2D( GL_TEXTURE_2D, 0, 3, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+		#if defined(AMIGAOS)
+		qglTexImage2D( GL_TEXTURE_2D, 0, 0, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data ); // minigl workaround - Cowcat
+		#else
+		qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+		#endif
 #endif
 		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
@@ -1263,7 +1277,6 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, const byte *data, int
 		}
 	}
 
-	#endif
 }
 
 
@@ -1645,9 +1658,11 @@ const void  *RB_SwapBuffers( const void *data ) {
 	// we measure overdraw by reading back the stencil buffer and
 	// counting up the number of increments that have happened
 #ifndef USE_OPENGLES
-	if ( r_measureOverdraw->integer ) {
-
+	
 	#if !defined(AMIGAOS) // Cowcat
+
+	if ( r_measureOverdraw->integer )
+	{
 		int i;
 		long sum = 0;
 		unsigned char *stencilReadback;
@@ -1661,9 +1676,9 @@ const void  *RB_SwapBuffers( const void *data ) {
 
 		backEnd.pc.c_overDraw += sum;
 		ri.Hunk_FreeTempMemory( stencilReadback );
-	#endif
-
 	}
+
+	#endif
 #endif
 
 

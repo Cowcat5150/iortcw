@@ -32,7 +32,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifdef __VBCC__
 #pragma amiga-align
 #elif defined(WARPUP)
-#pragma pack(2)
+#pragma pack(push,2)
 #endif
 
 #include <exec/exec.h>
@@ -48,7 +48,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifdef __VBCC__
 #pragma default align
 #elif defined (WARPUP)
-#pragma pack()
+#pragma pack(pop)
 #endif
 
 #ifdef DLL
@@ -97,7 +97,6 @@ char *Sys_GetDLLName( const char *name )
 	return va("%s.sp." ARCH_STRING DLL_EXT, name);
 }
 
-extern char *FS_BuildOSPath( const char *base, const char *game, const char *qpath );
 
 //void *Sys_LoadDll( const char *name, char *fqpath, intptr_t(**entryPoint)(int, ...), intptr_t(*systemcalls)(intptr_t, ...) ) 
 //void *Sys_LoadDll( const char *name, char *fqpath, intptr_t(**entryPoint)(int, int, int, int ), intptr_t(*systemcalls)(intptr_t, ...) ) // Cowcat
@@ -107,15 +106,15 @@ void * QDECL Sys_LoadDll( const char *name, intptr_t(**entryPoint)(int, ...), in
 
 	void	*libHandle;
 	char	fname[MAX_OSPATH];
-	char	*basepath;
-	char	*gamedir;
+	//char	*basepath;
+	//char	*gamedir;
 	char	*fn;
 	void	(*dllEntry)( intptr_t (*syscallptr)(intptr_t, ...) );
 
 	Q_strncpyz(fname, Sys_GetDLLName(name), sizeof(fname));
 
-	basepath = Cvar_VariableString( "fs_basepath" );
-	gamedir = Cvar_VariableString( "fs_game" );
+	//basepath = Cvar_VariableString( "fs_basepath" );
+	//gamedir = Cvar_VariableString( "fs_game" );
 
 	//fn = FS_BuildOSPath( basepath, "", fname ); // fuck it - Cowcat
 	fn = (char*)name;
@@ -123,7 +122,7 @@ void * QDECL Sys_LoadDll( const char *name, intptr_t(**entryPoint)(int, ...), in
 	//Com_Printf( "name(%s)... \n", name );
 	//Com_Printf( "fname(%s)... \n", fname );
 
-	Com_Printf( "Sys_LoadDll(%s)... \n", fn );
+	Com_DPrintf( "Sys_LoadDll(%s)... \n", fn );
 	libHandle = dllLoadLibrary(fn, (char*)name );
 
 	if (!libHandle)
@@ -165,16 +164,12 @@ void Sys_BeginProfiling( void )
 {
 }
 
-void *MemPool = NULL;
-struct SignalSemaphorePPC PoolSem;
-
 void LeaveAmigaLibs(void)
 {
 	if(SocketBase)
 	{
 		CloseLibrary(SocketBase);
 		SocketBase = NULL;
-		//printf("SocketBase NULL\n");
 	}
 }
 	
@@ -183,6 +178,8 @@ static __attribute__ ((noreturn)) void Sys_Exit(int ex)
 {
 	//Sys_DestroyConsole();
 	//Timer_Term(); // not used now - Cowcat
+
+	NET_Shutdown();
 
 	LeaveAmigaLibs();
 	
@@ -275,7 +272,7 @@ are initialized
 
 void Sys_Init( void )
 {
-	char *cpuidstr;
+	//char *cpuidstr;
 	
 	Cmd_AddCommand ("in_restart", Sys_In_Restart_f);
 
@@ -451,7 +448,7 @@ sysEvent_t Sys_GetEvent(void)
 
 
 //static char __attribute__((used)) stackcookie[] = "$STACK:2000000";
-unsigned long __stack = 0x2000000; // auto stack Cowcat
+unsigned long __stack = 0x200000; // auto stack Cowcat
 
 int main(int argc, char **argv)
 {

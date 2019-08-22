@@ -54,6 +54,10 @@ extern int bg_pmove_gameskill_integer;
 
 vmCvar_t g_gametype;
 
+#if 1 // Cowcat
+vmCvar_t g_skipcutscenes;
+#endif
+
 // Rafael gameskill
 vmCvar_t g_gameskill;
 // done
@@ -168,6 +172,8 @@ cvarTable_t gameCvarTable[] = {
 	{ &g_LTChargeTime, "g_LTChargeTime", "20000", CVAR_SERVERINFO | CVAR_LATCH, 0, qfalse },
 	{ &g_soldierChargeTime, "g_soldierChargeTime", "20000", CVAR_SERVERINFO | CVAR_LATCH, 0, qfalse },
 // jpw
+
+	{ &g_skipcutscenes, "g_skipcutscenes", "0", CVAR_ARCHIVE, 0, qtrue  }, // Cowcat
 
 	{ &g_playerStart, "g_playerStart", "0", CVAR_ROM, 0, qfalse  },
 

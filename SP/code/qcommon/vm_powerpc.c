@@ -382,6 +382,8 @@ static long int VM_AsmCall( int callSyscallInvNum, int callProgramStack )
 	// save the stack to allow recursive VM entry
 	currentVM->programStack = callProgramStack - 4;
 
+	#if 0
+
 	#ifndef AMIGAOS
 	// we need to convert ints to longs on 64bit powerpcs
 	if ( sizeof( intptr_t ) == sizeof( int ) )
@@ -409,6 +411,17 @@ static long int VM_AsmCall( int callSyscallInvNum, int callProgramStack )
 
 		ret = currentVM->systemCall( args );
 	}
+
+	#else
+
+	int *argPosition = (int *)((byte *)currentVM->dataBase + callProgramStack + 4);
+
+	// generated code does not invert syscall number
+	argPosition[ 0 ] = -1 - callSyscallInvNum;
+
+	ret = currentVM->systemCall( argPosition );
+
+	#endif
 
 	currentVM = savedVM;
 

@@ -1613,8 +1613,9 @@ sysEvent_t Com_GetSystemEvent( void )
 #define MAX_QUEUED_EVENTS  128
 #define MASK_QUEUED_EVENTS ( MAX_QUEUED_EVENTS - 1 )
 
-static sysEvent_t  eventQueue[ MAX_QUEUED_EVENTS ];
-static sysEvent_t  *lastEvent = NULL;
+static sysEvent_t	eventQueue[ MAX_QUEUED_EVENTS ];
+//static sysEvent_t 	*lastEvent = NULL;
+static sysEvent_t	*lastEvent = eventQueue + MAX_QUEUED_EVENTS - 1; // new
 static unsigned int	eventHead = 0;
 static unsigned int	eventTail = 0;
 
@@ -1646,6 +1647,9 @@ void Com_QueueEvent( int evTime, sysEventType_t evType, int value, int value2, i
 		evTime = Sys_Milliseconds();
 
 	// combine mouse movement with previous mouse event
+
+	#if 0
+
 	if( evType == SE_MOUSE && lastEvent && lastEvent->evType == SE_MOUSE )
 	{
 		if ( eventTail == eventHead )
@@ -1664,6 +1668,18 @@ void Com_QueueEvent( int evTime, sysEventType_t evType, int value, int value2, i
 		lastEvent->evTime = evTime;
 		return;
 	}
+
+	#else // new
+
+	if( evType == SE_MOUSE && lastEvent->evType == SE_MOUSE && eventHead != eventTail )
+	{
+		lastEvent->evValue += value;
+		lastEvent->evValue2 += value2;
+		lastEvent->evTime = evTime;
+		return;
+	}
+
+	#endif
 
 	ev = &eventQueue[ eventHead & MASK_QUEUED_EVENTS ];
 
@@ -1706,11 +1722,21 @@ sysEvent_t Com_GetSystemEvent( void )
 	int	    evTime;
 
 	// return if we have data
+
+	#if 0
+
 	if ( eventHead > eventTail )
 	{
 		eventTail++;
 		return eventQueue[ ( eventTail - 1 ) & MASK_QUEUED_EVENTS ];
 	}
+
+	#else // new
+
+	if ( eventHead - eventTail > 0)
+		return eventQueue[ ( eventTail++ ) & MASK_QUEUED_EVENTS ];
+
+	#endif
 
 	evTime = Sys_Milliseconds();
 
@@ -1729,11 +1755,21 @@ sysEvent_t Com_GetSystemEvent( void )
 	}
 
 	// return if we have data
+
+	#if 0
+
 	if ( eventHead > eventTail )
 	{
 		eventTail++;
 		return eventQueue[ ( eventTail - 1 ) & MASK_QUEUED_EVENTS ];
 	}
+
+	#else // new
+
+	if ( eventHead - eventTail > 0)
+		return eventQueue[ ( eventTail++ ) & MASK_QUEUED_EVENTS ];
+
+	#endif
 
 	// create an empty event to return
 	memset( &ev, 0, sizeof( ev ) );
@@ -2097,8 +2133,7 @@ Change to a new mod properly with cleaning up cvars before switching.
 ==================
 */
 
-//#if !defined(AMIGAOS) // called from files.c - disabled until bugfix Amiga render - Cowcat
-#if 1
+
 void Com_GameRestart(int checksumFeed, qboolean disconnect)
 {
 	// make sure no recursion can be triggered
@@ -2159,7 +2194,6 @@ void Com_GameRestart_f(void)
 	Com_GameRestart(0, qtrue);
 }
 
-#endif
 
 #ifndef STANDALONE
 

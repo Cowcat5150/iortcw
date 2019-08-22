@@ -746,9 +746,10 @@ void VM_Free( vm_t *vm ) {
 	if(vm->destroy)
 		vm->destroy(vm);
 
-	if ( vm->dllHandle ) {
+	if ( vm->dllHandle )
+	{
 		Sys_UnloadDll( vm->dllHandle );
-		Com_Memset( vm, 0, sizeof( *vm ) );
+		//Com_Memset( vm, 0, sizeof( *vm ) );
 	}
 
 #if 0	// now automatically freed by hunk
@@ -762,6 +763,7 @@ void VM_Free( vm_t *vm ) {
 		Z_Free( vm->instructionPointers );
 	}
 #endif
+
 	Com_Memset( vm, 0, sizeof( *vm ) );
 
 	currentVM = NULL;
@@ -876,6 +878,7 @@ intptr_t QDECL VM_Call( vm_t *vm, intptr_t callnum, ... )
 	{
 		//rcg010207 -  see dissertation at top of VM_DllSyscall() in this file.
 		intptr_t args[MAX_VMMAIN_ARGS-1];
+		//intptr_t args[3]; // Cowcat
 		va_list ap;
 		va_start(ap, callnum);
 
@@ -885,9 +888,10 @@ intptr_t QDECL VM_Call( vm_t *vm, intptr_t callnum, ... )
 
 		va_end(ap);
 
-		r = vm->entryPoint( callnum,  args[0],  args[1],  args[2], args[3],
-                            args[4],  args[5],  args[6], args[7],
-                            args[8],  args[9], args[10], args[11]);
+		r = vm->entryPoint( callnum,  args[0],  args[1],  args[2], args[3], args[4],  args[5],  args[6], args[7], 
+			args[8],  args[9], args[10], args[11]);
+
+		//r = vm->entryPoint( callnum,  args[0],  args[1],  args[2] ); // Cowcat
 	}
 
 	else

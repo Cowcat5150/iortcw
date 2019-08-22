@@ -123,6 +123,7 @@ typedef enum {
 	K_JOY14,
 	K_JOY15,
 	K_JOY16,
+/* // ec-Quake3e - not used
 	K_JOY17,
 	K_JOY18,
 	K_JOY19,
@@ -139,6 +140,7 @@ typedef enum {
 	K_JOY30,
 	K_JOY31,
 	K_JOY32,
+*/
 
 	K_AUX1,
 	K_AUX2,
@@ -148,6 +150,8 @@ typedef enum {
 	K_AUX6,
 	K_AUX7,
 	K_AUX8,
+
+/* // ec-Quake3e - not used
 	K_AUX9,
 	K_AUX10,
 	K_AUX11,
@@ -253,6 +257,7 @@ typedef enum {
 	K_WORLD_93,
 	K_WORLD_94,
 	K_WORLD_95,
+*/
 
 	K_SUPER,
 	K_COMPOSE,
@@ -305,7 +310,7 @@ typedef enum {
 // MAX_KEYS replaces K_LAST_KEY, however some mods may have used K_LAST_KEY
 // in detecting binds, so we leave it defined to the old hardcoded value
 // of maxiumum keys to prevent mods from crashing older versions of the engine
-#define K_LAST_KEY              256
+#define K_LAST_KEY	256
 
 // The menu code needs to get both key and char events, but
 // to avoid duplicating the paths, the char events are just

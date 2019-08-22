@@ -532,6 +532,8 @@ R_MipMap
 Operates in place, quartering the size of the texture
 ================
 */
+#if !defined(AMIGAOS)
+
 static float R_RMSE( byte *in, int width, int height ) {
 	int i, j;
 	float out, rmse, rtemp;
@@ -571,7 +573,7 @@ static float R_RMSE( byte *in, int width, int height ) {
 	rmse = sqrt( rmse / ( height * width * 4 ) );
 	return rmse;
 }
-
+#endif
 
 /*
 ==================
@@ -728,6 +730,11 @@ Upload32
 
 ===============
 */
+
+#if defined(AMIGAOS) // Cowcat
+qboolean cinematic;
+#endif
+
 static void Upload32(   unsigned *data,
 						int width, int height,
 						qboolean mipmap,
@@ -744,7 +751,10 @@ static void Upload32(   unsigned *data,
 	int i, c;
 	byte        *scan;
 	GLenum internalFormat = GL_RGB;
-	float rMax = 0, gMax = 0, bMax = 0;
+	//float rMax = 0, gMax = 0, bMax = 0; // Cowcat
+
+#if !defined(AMIGAOS)
+
 	static int rmse_saved = 0;
 #ifndef USE_BLOOM
 	float rmse;
@@ -777,6 +787,9 @@ static void Upload32(   unsigned *data,
 		}
 	}
 #endif
+
+#endif
+
 	//
 	// convert to exact power of 2 sizes
 	//
@@ -821,6 +834,8 @@ static void Upload32(   unsigned *data,
 		scaled_height >>= 1;
 	}
 
+#if !defined(AMIGAOS)
+
 #ifndef USE_BLOOM
 	rmse = R_RMSE( (byte *)data, width, height );
 
@@ -847,6 +862,7 @@ static void Upload32(   unsigned *data,
 	}
 #endif
 
+#endif
 	//
 	// clamp to minimum size
 	//
@@ -892,6 +908,7 @@ static void Upload32(   unsigned *data,
 	{
 		if(r_greyscale->integer)
 			internalFormat = GL_LUMINANCE;
+		
 		else
 			internalFormat = GL_RGB;
 	}
@@ -899,6 +916,7 @@ static void Upload32(   unsigned *data,
 	{
 		for ( i = 0; i < c; i++ )
 		{
+			#if 0 // Cowcat
 			if ( scan[i * 4 + 0] > rMax ) {
 				rMax = scan[i * 4 + 0];
 			}
@@ -908,11 +926,14 @@ static void Upload32(   unsigned *data,
 			if ( scan[i * 4 + 2] > bMax ) {
 				bMax = scan[i * 4 + 2];
 			}
+			#endif
+
 			if ( scan[i * 4 + 3] != 255 ) {
 				samples = 4;
 				break;
 			}
 		}
+
 		// select proper internal format
 		if ( samples == 3 )
 		{
@@ -926,6 +947,11 @@ static void Upload32(   unsigned *data,
 #endif
 					internalFormat = GL_LUMINANCE;
 			}
+
+			#if defined(AMIGAOS) // Cowcat
+			else if(cinematic)
+				internalFormat = GL_ALPHA; // hack
+			#endif
 
 			else
 			{
@@ -1191,6 +1217,8 @@ image_t *R_CreateImageExt( const char *name, byte *pic, int width, int height, i
 	int         glWrapClampMode;
 	long hash;
 	qboolean noCompress = qfalse;
+	
+	cinematic = qfalse; // Cowcat
 
 	if ( strlen( name ) >= MAX_QPATH ) {
 		ri.Error( ERR_DROP, "R_CreateImage: \"%s\" is too long", name );
@@ -1199,6 +1227,14 @@ image_t *R_CreateImageExt( const char *name, byte *pic, int width, int height, i
 		isLightmap = qtrue;
 		noCompress = qtrue;
 	}
+
+	#if defined(AMIGAOS) // Cowcat
+	if ( !strncmp( name, "*scratch", 8 ) )
+	{
+		cinematic = qtrue;
+	}
+	#endif
+
 	if ( !noCompress && strstr( name, "skies" ) ) {
 		noCompress = qtrue;
 	}
@@ -1636,7 +1672,6 @@ void R_CreateBuiltinImages( void ) {
 	}
 
 	tr.identityLightImage = R_CreateImage( "*identityLight", (byte *)data, 8, 8, IMGTYPE_COLORALPHA, IMGFLAG_NONE, 0 );
-
 
 	for ( x = 0; x < 32; x++ ) {
 		// scratchimage is usually used for cinematic drawing

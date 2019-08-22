@@ -1180,6 +1180,9 @@ void GfxInfo_f( void )
 		else if ( primitives == 1 )
 			ri.Printf( PRINT_ALL, "multiple glArrayElement\n" );
 
+		//else if ( primitives == 3 )
+			//ri.Printf( PRINT_ALL, "multiple glColor4ubv + glTexCoord2fv + glVertex3fv\n" );
+
 		#endif
 		
 		
@@ -1191,7 +1194,7 @@ void GfxInfo_f( void )
 	ri.Printf( PRINT_ALL, "picmip2: %d\n", r_picmip2->integer );
 	ri.Printf( PRINT_ALL, "texture bits: %d\n", r_texturebits->integer );
 	ri.Printf( PRINT_ALL, "multitexture: %s\n", enablestrings[qglActiveTextureARB != 0] );
-	ri.Printf( PRINT_ALL, "compiled vertex arrays: %s\n", enablestrings[qglLockArraysEXT != 0 ] );
+	ri.Printf( PRINT_ALL, "compiled vertex arrays: %s\n", "enabled" ); // enablestrings[qglLockArraysEXT != 0 ] ); // Cowcat
 	ri.Printf( PRINT_ALL, "texenv add: %s\n", enablestrings[glConfig.textureEnvAddAvailable != 0] );
 	ri.Printf( PRINT_ALL, "compressed textures: %s\n", enablestrings[glConfig.textureCompression != TC_NONE] );
 
@@ -1217,12 +1220,16 @@ void GfxInfo_f( void )
 	if ( r_vertexLight->integer || glConfig.hardwareType == GLHW_PERMEDIA2 ) {
 		ri.Printf( PRINT_ALL, "HACK: using vertex lightmap approximation\n" );
 	}
+
+	#if 0 // Cowcat
 	if ( glConfig.hardwareType == GLHW_RAGEPRO ) {
 		ri.Printf( PRINT_ALL, "HACK: ragePro approximations\n" );
 	}
 	if ( glConfig.hardwareType == GLHW_RIVA128 ) {
 		ri.Printf( PRINT_ALL, "HACK: riva128 approximations\n" );
 	}
+	#endif
+
 	if ( r_finish->integer ) {
 		ri.Printf( PRINT_ALL, "Forcing glFinish\n" );
 	}
@@ -1248,7 +1255,7 @@ void R_Register( void )
 	r_allowExtensions = ri.Cvar_Get( "r_allowExtensions", "1", CVAR_ARCHIVE | CVAR_LATCH ); //
 	r_ext_compressed_textures = ri.Cvar_Get( "r_ext_compressed_textures", "0", CVAR_ARCHIVE | CVAR_LATCH );   // (SA) ew, a spelling change I missed from the missionpack
 	r_ext_multitexture = ri.Cvar_Get( "r_ext_multitexture", "0", CVAR_ARCHIVE | CVAR_LATCH ); // Cowcat
-	r_ext_compiled_vertex_array = ri.Cvar_Get( "r_ext_compiled_vertex_array", "0", CVAR_ARCHIVE | CVAR_LATCH ); // Cowcat
+	r_ext_compiled_vertex_array = ri.Cvar_Get( "r_ext_compiled_vertex_array", "1", CVAR_ARCHIVE | CVAR_LATCH ); // Cowcat
 	r_glIgnoreWicked3D = ri.Cvar_Get( "r_glIgnoreWicked3D", "0", CVAR_ARCHIVE | CVAR_LATCH );
 
 #if !defined(AMIGAOS) && !defined(MORPHOS) // Cowcat
@@ -1363,7 +1370,7 @@ void R_Register( void )
 #ifdef USE_OPENGLES
 	r_primitives = ri.Cvar_Get( "r_primitives", "2", CVAR_ARCHIVE );
 #else
-	r_primitives = ri.Cvar_Get( "r_primitives", "0", CVAR_ARCHIVE ); // Cowcat
+	r_primitives = ri.Cvar_Get( "r_primitives", "1", CVAR_ARCHIVE ); // Cowcat
 #endif
 
 	r_ambientScale = ri.Cvar_Get( "r_ambientScale", "0.5", CVAR_CHEAT );

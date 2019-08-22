@@ -1112,10 +1112,6 @@ Unsets a cvar
 ============
 */
 
-//
-//#if !defined(AMIGAOS) // disabled until minigl Amiga fix - Cowcat 
-#if 1
-
 cvar_t *Cvar_Unset(cvar_t *cv)
 {
 	cvar_t *next = cv->next;
@@ -1229,8 +1225,6 @@ void Cvar_Restart_f(void)
 {
 	Cvar_Restart(qfalse);
 }
-
-#endif
 
 /*
 =====================

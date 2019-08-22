@@ -297,6 +297,9 @@ SV_GameSystemCalls
 The module is making a system call
 ====================
 */
+
+#define round roundf // Cowcat
+
 intptr_t SV_GameSystemCalls( intptr_t *args ) {
 	switch ( args[0] ) {
 	case G_PRINT:

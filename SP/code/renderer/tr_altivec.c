@@ -122,7 +122,8 @@ void ProjectDlightTexture_altivec( void )
 
 		floatColorVec0 = vec_ld(0, floatColor);
 		floatColorVec1 = vec_ld(11, floatColor);
-		floatColorVec0 = vec_perm(floatColorVec0,floatColorVec0,floatColorVecPerm);
+		//floatColorVec0 = vec_perm(floatColorVec0,floatColorVec0,floatColorVecPerm);
+		floatColorVec0 = vec_perm(floatColorVec0,floatColorVec1,floatColorVecPerm); // Cowcat
 
 		for ( i = 0 ; i < tess.numVertexes ; i++, texCoords += 2, colors += 4 )
 		{

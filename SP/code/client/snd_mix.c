@@ -181,6 +181,7 @@ void S_TransferPaintBuffer(int endtime)
 		step = 3 - MIN(dma.channels, 2);
 
 		#if !defined(AMIGAOS) && !defined(MORPHOS) // Cowcat
+
 		if ((dma.isfloat) && (dma.samplebits == 32))
 		{
 			float *out = (float *) pbuf;
@@ -270,7 +271,7 @@ void S_TransferPaintBuffer(int endtime)
 	
 			#else // Cowcat
 
-			// Amiga needs signed 8 bit data
+			// Amiga AHI needs signed 8 bit data
 			char *out = (char *) pbuf;
 
 			for (i=0 ; i<count ; i++)

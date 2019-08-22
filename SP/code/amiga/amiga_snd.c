@@ -28,7 +28,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifdef __VBCC__
 #pragma amiga-align
 #elif defined(WARPUP)
-#pragma pack(2)
+#pragma pack(push,2)
 #endif
 
 #include <proto/exec.h>
@@ -48,7 +48,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifdef __VBCC__
 #pragma default-align
 #elif defined (WARPUP)
-#pragma pack()
+#pragma pack(pop)
 #endif
 
 /* Implemented 100% on recycled Quake 2 code */
@@ -65,9 +65,9 @@ static unsigned short callback[] = {
 	0x48e7, 0x0020, 0x2448, 0x2029, 0x000c, 0x2540, 0x0010, 0x7000, 0x245f, 0x4e75
 };
 
+
 // pragma(2) here ? 
-//#pragma amiga-align
-#pragma pack(2)
+#pragma amiga-align
 
 struct ChannelInfo
 {
@@ -75,8 +75,7 @@ struct ChannelInfo
   	ULONG x[1];
 };
 
-//#pragma default-align
-#pragma pack()
+#pragma default-align
 
 
 struct Library *AHIBase = NULL;
@@ -97,9 +96,6 @@ static UBYTE *dmabuf = NULL;
 static int buflen;
 
 #define MINBUFFERSIZE 4*16384
-//#define MINBUFFERSIZE 16384
-
-//extern ULONG callback(struct Hook *hook, struct AHIAudioCtrl *actrl, struct AHIEffChannelInfo *info);
 
 struct Hook EffHook = 
 {
@@ -223,7 +219,6 @@ qboolean SNDDMA_Init(void)
 				TAG_END);
 			
 	AHI_ControlAudio(actrl, AHIC_MixFreq_Query, (ULONG)&mixfreq, TAG_END);
-	//AHI_ControlAudio(actrl, AHIC_MixFreq_Query, (ULONG)&speed, TAG_END);
 			
 	buflen = playsamples * speed / mixfreq;
 
@@ -273,7 +268,7 @@ qboolean SNDDMA_Init(void)
 	AHI_Play(actrl, 
 			AHIP_BeginChannel, 	0,
 			AHIP_Freq, 		speed,
-			AHIP_Vol, 		0x10000, // more volume ? - Cowcat
+			AHIP_Vol, 		0x10000,
 			AHIP_Pan, 		0x8000,
 			AHIP_Sound,		0,
 			AHIP_EndChannel, 	NULL,

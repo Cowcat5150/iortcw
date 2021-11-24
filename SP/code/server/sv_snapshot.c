@@ -243,15 +243,14 @@ Build a client snapshot structure
 =============================================================================
 */
 
-typedef int entityNum_t; // Quake3e 
+typedef int entityNum_t; // Quake3e
 
 typedef struct {
 	int		numSnapshotEntities;
 	entityNum_t	snapshotEntities[MAX_SNAPSHOT_ENTITIES]; // Quake3e - was int
-	qboolean	unordered; // Quake3e -added
+	//qboolean	unordered; // Quake3e -added
 
 } snapshotEntityNumbers_t;
-
 
 /*
 =======================
@@ -317,13 +316,17 @@ SV_AddEntToSnapshot
 */
 static void SV_AddEntToSnapshot( svEntity_t *svEnt, sharedEntity_t *gEnt, snapshotEntityNumbers_t *eNums ) {
 	// if we have already added this entity to this snapshot, don't add again
+
+	#if 0 // already done - Cowcat
 	if ( svEnt->snapshotCounter == sv.snapshotCounter ) {
 		return;
 	}
+	#endif
+
 	svEnt->snapshotCounter = sv.snapshotCounter;
 
 	// if we are full, silently discard entities
-	if ( eNums->numSnapshotEntities == MAX_SNAPSHOT_ENTITIES ) {
+	if ( eNums->numSnapshotEntities >= MAX_SNAPSHOT_ENTITIES ) { // was == Cowcat
 		return;
 	}
 
@@ -421,7 +424,7 @@ static void SV_AddEntitiesVisibleFromPoint( vec3_t origin, clientSnapshot_t *fra
 				SV_AddEntToSnapshot( svEnt, ent, eNums );
 //				SV_AddEntitiesVisibleFromPoint( ent->s.origin2, frame, eNums, qtrue, oldframe, localClient );
 				
-				eNums->unordered = qtrue; // Quake3e
+				//eNums->unordered = qtrue; // Quake3e
 				SV_AddEntitiesVisibleFromPoint( ent->s.origin2, frame, eNums, qtrue, localClient );
 			}
 
@@ -563,7 +566,7 @@ static void SV_AddEntitiesVisibleFromPoint( vec3_t origin, clientSnapshot_t *fra
 		if ( ent->r.svFlags & SVF_PORTAL ) {
 //			SV_AddEntitiesVisibleFromPoint( ent->s.origin2, frame, eNums, qtrue, oldframe, localClient );
 
-			eNums->unordered = qtrue; // Quake3e
+			//eNums->unordered = qtrue; // Quake3e
 			SV_AddEntitiesVisibleFromPoint( ent->s.origin2, frame, eNums, qtrue, localClient );
 		}
 
@@ -692,7 +695,7 @@ static void SV_BuildClientSnapshot( client_t *client )
 
 	// add all the entities directly visible to the eye, which
 	// may include portal entities that merge other viewpoints
-	entityNumbers.unordered = qfalse; // Quake3e
+	//entityNumbers.unordered = qfalse; // Quake3e
 	SV_AddEntitiesVisibleFromPoint( org, frame, &entityNumbers, qfalse, client->netchan.remoteAddress.type == NA_LOOPBACK );
 //	SV_AddEntitiesVisibleFromPoint( org, frame, &entityNumbers, qfalse, oldframe, client->netchan.remoteAddress.type == NA_LOOPBACK );
 
@@ -702,20 +705,17 @@ static void SV_BuildClientSnapshot( client_t *client )
 	// of an entity being included twice.
 
 	#if 0
-	#if defined(AMIGAOS) // Cowcat
-	
-	ssort( entityNumbers.snapshotEntities, entityNumbers.numSnapshotEntities, sizeof( entityNumbers.snapshotEntities[0] ), SV_QsortEntityNumbers );
 
-	#else
 	qsort( entityNumbers.snapshotEntities, entityNumbers.numSnapshotEntities, sizeof( entityNumbers.snapshotEntities[0] ), SV_QsortEntityNumbers );
 
-	#endif
-	#endif
+	#else // ec-/Quake3e optimization
 
-	if(entityNumbers.unordered) // ec-/Quake3e optimization
+	//if(entityNumbers.unordered) 
 	{
 		SV_SortEntityNumbers( &entityNumbers.snapshotEntities[0], entityNumbers.numSnapshotEntities);
 	}
+
+	#endif
 
 	// now that all viewpoint's areabits have been OR'd together, invert
 	// all of them to make it a mask vector, which is what the renderer wants

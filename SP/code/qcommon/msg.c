@@ -734,6 +734,7 @@ int MSG_ReadDeltaKey( msg_t *msg, int key, int oldV, int bits ) {
 }
 
 #if 0 // not used? - Cowcat
+
 void MSG_WriteDeltaKeyFloat( msg_t *msg, int key, float oldV, float newV ) {
 	floatint_t fi;
 	if ( oldV == newV ) {
@@ -754,6 +755,7 @@ float MSG_ReadDeltaKeyFloat( msg_t *msg, int key, float oldV ) {
 	}
 	return oldV;
 }
+
 #endif
 
 /*

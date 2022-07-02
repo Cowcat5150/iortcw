@@ -25,11 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #undef NULL
 
-#ifdef __VBCC__
-#pragma amiga-align
-#elif defined(WARPUP)
 #pragma pack(push,2)
-#endif
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -45,11 +41,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif 
 #endif
 
-#ifdef __VBCC__
-#pragma default-align
-#elif defined (WARPUP)
 #pragma pack(pop)
-#endif
 
 /* Implemented 100% on recycled Quake 2 code */
 
@@ -63,11 +55,12 @@ ULONG callback(__reg("a0") struct Hook *hook, __reg("a2") struct AHIAudioCtrl *a
 
 static unsigned short callback[] = {
 	0x48e7, 0x0020, 0x2448, 0x2029, 0x000c, 0x2540, 0x0010, 0x7000, 0x245f, 0x4e75
+	//0x2469, 0x000c, 0x214a, 0x0010, 0x7000, 0x4e75
+	//0x2029, 0x000c, 0x2140, 0x0010, 0x4e75
 };
 
 
-// pragma(2) here ? 
-#pragma amiga-align
+#pragma pack(push,2)
 
 struct ChannelInfo
 {
@@ -75,7 +68,7 @@ struct ChannelInfo
   	ULONG x[1];
 };
 
-#pragma default-align
+#pragma pack(pop)
 
 
 struct Library *AHIBase = NULL;
@@ -99,7 +92,7 @@ static int buflen;
 
 struct Hook EffHook = 
 {
-  	0, 0,
+  	{0, 0},
   	(HOOKFUNC)callback,
   	0, 0,
 };
@@ -107,7 +100,7 @@ struct Hook EffHook =
 qboolean SNDDMA_Init(void)
 {
 	struct AHISampleInfo 	sample;
-	ULONG 			mixfreq, playsamples, channels;
+	ULONG 			mixfreq, playsamples;
 	UBYTE 			name[256];
 	ULONG 			mode;
 	ULONG 			type;
@@ -227,6 +220,8 @@ qboolean SNDDMA_Init(void)
 
 	#ifdef __PPC__
 	if ((dmabuf = AllocVecPPC( buflen, MEMF_ANY|MEMF_PUBLIC|MEMF_CLEAR, 0)) == NULL)
+	//size_t L1size = (buflen + 32 - 1) & ~(32 - 1);
+	//if ((dmabuf = AllocVecPPC(buflen, MEMF_ANY|MEMF_PUBLIC|MEMF_CLEAR, L1size)) == NULL)
 	#else
 	if ((dmabuf = AllocVec(buflen, MEMF_ANY|MEMF_PUBLIC|MEMF_CLEAR)) == NULL) 
 	#endif

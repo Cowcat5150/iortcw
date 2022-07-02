@@ -64,8 +64,10 @@ struct Library *KeymapBase = 0;
 
 extern struct Window *win;
 extern qboolean windowmode;
+qboolean keycatch;
+qboolean decodechar; // test new Cowcat
 
-static void IN_ProcessEvents(qboolean keycatch);
+//static void IN_ProcessEvents(qboolean keycatch);
 
 void IN_ActivateMouse( qboolean isFullscreen ) 
 {
@@ -125,11 +127,18 @@ void IN_Frame (void)
 	// Cowcat windowmode mousehandler juggling
 
 	static qboolean mousein;
-	qboolean keycatch = qfalse;
+	//qboolean keycatch = qfalse;
+	keycatch = qfalse;
+	decodechar = qfalse;
+
+	int keycatcher = Key_GetCatcher( );
+
+	if ( keycatcher & ~KEYCATCH_CGAME )
+		decodechar = qtrue;
 
 	if ( windowmode && mouse_avail )
 	{
-		int keycatcher = Key_GetCatcher( );
+		//int keycatcher = Key_GetCatcher( );
 
 		if( keycatcher & KEYCATCH_CONSOLE )
 		{
@@ -165,7 +174,7 @@ void IN_Frame (void)
 
 	#endif
 
-	IN_ProcessEvents(keycatch);
+	//IN_ProcessEvents(keycatch);
 }
 
 
@@ -386,12 +395,11 @@ struct MsgStruct
 	UWORD Code;
 	WORD MouseX;
 	WORD MouseY;
-	UWORD rawkey;
+	WORD rawkey;
 };
 #pragma pack(pop)
 
-
-static int GetEvents(void *port, void *msgarray, int arraysize)
+static int GetEvents( void *port, void *msgarray, qboolean decodechar )
 {
 	extern int GetMessages68k();
 	struct PPCArgs args;
@@ -403,14 +411,15 @@ static int GetEvents(void *port, void *msgarray, int arraysize)
 	args.PP_StackSize = 0;
 	args.PP_Regs[PPREG_A0] = (ULONG)msgarray;
 	args.PP_Regs[PPREG_A1] = (ULONG)port;
-	args.PP_Regs[PPREG_D0] = arraysize;
+	args.PP_Regs[PPREG_D1] = decodechar;
 
 	Run68K(&args);
 
 	return args.PP_Regs[PPREG_D0];
 }
 
-static void IN_ProcessEvents(qboolean keycatch)
+//static void IN_ProcessEvents(qboolean keycatch)
+void IN_ProcessEvents(void)
 {
 	UWORD res;
 	int i;
@@ -418,10 +427,13 @@ static void IN_ProcessEvents(qboolean keycatch)
 	if(!Sys_EventPort)
 		return;
 
-	struct MsgStruct events[50];
-	const ULONG msgTime = 0; //Sys_Milliseconds();
+	struct MsgStruct events[10]; // max 6 ? Cowcat
+	const ULONG msgTime = Sys_Milliseconds();
 
-	int messages = GetEvents(Sys_EventPort, events, 50);
+	//int messages = GetEvents( Sys_EventPort, events, 50, decodechar );
+	int messages = GetEvents( Sys_EventPort, events, decodechar );
+
+	//const ULONG msgTime = Sys_Milliseconds();
 
 	//if (messages > 0)
 		//Com_Printf("messages %d\n", messages);
@@ -430,20 +442,21 @@ static void IN_ProcessEvents(qboolean keycatch)
 
 	while ( i < messages )
 	{
+		UWORD Codekey = events[i].Code;
+
 		switch( events[i].Class )
 		{
 			case IDCMP_RAWKEY:
 
-				if ( keycatch &&  events[i].Code == ( 0x63 & ~IECODE_UP_PREFIX ) ) // windowmode handler workaround
+				if ( keycatch &&  Codekey == ( 0x63 & ~IECODE_UP_PREFIX ) ) // windowmode handler workaround
 				{
-					Com_QueueEvent(msgTime, SE_KEY, K_MOUSE1, keyDown(events[i].Code), 0, NULL);
+					Com_QueueEvent( msgTime, SE_KEY, K_MOUSE1, keyDown(Codekey), 0, NULL );
 					//Com_Printf ("mouse key RAWKEY\n"); //
 				}
 
 				else
 				{
-					int key = scantokey[ events[i].Code & 0x7f ];
-
+					int key = scantokey[ Codekey & 0x7f ];
 					//Com_Printf ("key encoded %d \n", key); //
 
 					if (key == '`') 
@@ -455,10 +468,16 @@ static void IN_ProcessEvents(qboolean keycatch)
 					else
 						res = 1;
 
-					Com_QueueEvent(msgTime, SE_KEY, key, keyDown(events[i].Code), 0, NULL);
+					Com_QueueEvent( msgTime, SE_KEY, key, keyDown(Codekey), 0, NULL );
 
-					if (res == 1)
-						Com_QueueEvent(msgTime, SE_CHAR, events[i].rawkey, 0, 0, NULL);
+					//if ( Codekey & ~IECODE_UP_PREFIX  && res == 1 )
+					//if ( decodechar && Codekey & ~IECODE_UP_PREFIX )
+					//if ( res && decodechar && events[i].rawkey )
+					if ( res && events[i].rawkey )
+					{
+						//Com_Printf ("key encoded console %d \n", key); //
+						Com_QueueEvent( msgTime, SE_CHAR, events[i].rawkey, 0, 0, NULL );
+					}
 				}
 
 				break;
@@ -467,30 +486,28 @@ static void IN_ProcessEvents(qboolean keycatch)
 
 				if (mouse_active)
 				{
-					mx = events[i].MouseX;
-					my = events[i].MouseY;
-
-					Com_QueueEvent(msgTime, SE_MOUSE, mx, my, 0, NULL);
+					Com_QueueEvent( msgTime, SE_MOUSE, events[i].MouseX, events[i].MouseY, 0, NULL );
 				}
 
 				break;
 
 			case IDCMP_MOUSEBUTTONS:
-	
-				switch (events[i].Code & ~IECODE_UP_PREFIX)
+
 				{
-					case IECODE_LBUTTON:
-						Com_QueueEvent(msgTime, SE_KEY, K_MOUSE1, keyDown(events[i].Code), 0, NULL);
-						break;
+					int b;
 
-					case IECODE_RBUTTON:
-						Com_QueueEvent(msgTime, SE_KEY, K_MOUSE2, keyDown(events[i].Code), 0, NULL);
-						break;
+					switch ( Codekey & ~IECODE_UP_PREFIX )
+					{
+						case IECODE_LBUTTON: b = K_MOUSE1; break;
+						case IECODE_RBUTTON: b = K_MOUSE2; break;
+						case IECODE_MBUTTON: b = K_MOUSE3; break;
+						default: b = IECODE_NOBUTTON; break;
+					}
 
-					case IECODE_MBUTTON:
-						Com_QueueEvent(msgTime, SE_KEY, K_MOUSE3, keyDown(events[i].Code), 0, NULL);
-						break;
+					Com_QueueEvent( msgTime, SE_KEY, b, keyDown(Codekey), 0, NULL );
 				}
+
+				break;
 		}
 
 		i++;

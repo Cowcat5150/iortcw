@@ -462,7 +462,12 @@ extern vec4_t colorMdGrey;
 extern vec4_t colorDkGrey;
 
 #define Q_COLOR_ESCAPE  '^'
+
+#if defined(AMIGAOS) || defined (__GCC__)
+#define Q_IsColorString(p)	((p) && *(p) == Q_COLOR_ESCAPE && *((p)+1) && isalnum((unsigned char)*((p)+1))) // ^[0-9a-zA-Z]
+#else
 #define Q_IsColorString(p)	((p) && *(p) == Q_COLOR_ESCAPE && *((p)+1) && isalnum(*((p)+1))) // ^[0-9a-zA-Z]
+#endif
 
 #define COLOR_BLACK     '0'
 #define COLOR_RED       '1'
@@ -597,13 +602,16 @@ static ID_INLINE float Q_rsqrt( float number )
 
 	#else // Cowcat
 
-	float y;
+	float y, x, z;
+		
+	// y = 1.5 * number - number
+	asm("fmsubs %0,%1,%2,%3\n" : "=f" (y) : "f" (1.5f), "f" (number), "f" (number));
+        
+	asm("frsqrte %0,%1\n" : "=f" (x) : "f" (number));
 
-	asm("frsqrte %0,%1" : "=f" (y) : "f" (number));
+	asm("fnmsubs %0,%1,%2,%3\n" : "=f" (z) : "f" (y), "f" (x * x), "f" (1.5f));
 
-	y = y + 0.5f * y * (1.0f - (number * y * y));
-
-	return y;
+	return x * z;
 
 	#endif
 }

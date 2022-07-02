@@ -29,11 +29,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define __USE_BASETYPE__
 
-#ifdef __VBCC__
-#pragma amiga-align
-#elif defined(WARPUP)
 #pragma pack(push,2)
-#endif
 
 #include <exec/exec.h>
 #include <exec/ports.h>
@@ -45,11 +41,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <proto/timer.h>
 #include <proto/intuition.h>
 
-#ifdef __VBCC__
-#pragma default align
-#elif defined (WARPUP)
 #pragma pack(pop)
-#endif
 
 #ifdef DLL
 #include "dll.h"
@@ -100,7 +92,8 @@ char *Sys_GetDLLName( const char *name )
 
 //void *Sys_LoadDll( const char *name, char *fqpath, intptr_t(**entryPoint)(int, ...), intptr_t(*systemcalls)(intptr_t, ...) ) 
 //void *Sys_LoadDll( const char *name, char *fqpath, intptr_t(**entryPoint)(int, int, int, int ), intptr_t(*systemcalls)(intptr_t, ...) ) // Cowcat
-void * QDECL Sys_LoadDll( const char *name, intptr_t(**entryPoint)(int, ...), intptr_t(*systemcalls)(intptr_t, ...) )
+//void * QDECL Sys_LoadDll( const char *name, intptr_t(**entryPoint)(int, ...), intptr_t(*systemcalls)(intptr_t, ...) )
+void * QDECL Sys_LoadDll( const char *name, intptr_t(QDECL **entryPoint)(intptr_t, ...), intptr_t(*systemcalls)(intptr_t, ...) ) // new
 {
 #ifdef DLL
 
@@ -448,7 +441,10 @@ sysEvent_t Sys_GetEvent(void)
 
 
 //static char __attribute__((used)) stackcookie[] = "$STACK:2000000";
+
+#ifdef __VBCC__
 unsigned long __stack = 0x200000; // auto stack Cowcat
+#endif
 
 int main(int argc, char **argv)
 {
@@ -493,17 +489,12 @@ int main(int argc, char **argv)
 
 	while( 1 ) 
 	{
-		//startTime = Sys_Milliseconds();
-
 		// make sure mouse and joystick are only called once a frame
 		//IN_Frame(); // now called in common.c - Com_Frame
+		IN_Frame();
 
 		// run the game
 		Com_Frame();
-
-		//endTime = Sys_Milliseconds();
-		//totalMsec += endTime - startTime;
-		//countMsec++;
 	}
 
 	return 0; 

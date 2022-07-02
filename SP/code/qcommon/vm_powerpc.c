@@ -34,6 +34,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #if defined(AMIGAOS)
 #if defined(__GNUC__)
+#include <powerpc/powerpc.h>
 #include <powerpc/powerpc_protos.h>
 #else
 #include <powerpc/powerpc.h>
@@ -412,9 +413,9 @@ static long int VM_AsmCall( int callSyscallInvNum, int callProgramStack )
 		ret = currentVM->systemCall( args );
 	}
 
-	#else
+	#else // Cowcat
 
-	int *argPosition = (int *)((byte *)currentVM->dataBase + callProgramStack + 4);
+	intptr_t *argPosition = (intptr_t *)((byte *)currentVM->dataBase + callProgramStack + 4);
 
 	// generated code does not invert syscall number
 	argPosition[ 0 ] = -1 - callSyscallInvNum;
@@ -2378,6 +2379,8 @@ void VM_Compile( vm_t *vm, vmHeader_t *header )
 		DIE( "mprotect failed" );
 	}
 	#endif
+
+	SetCache(CACHE_ICACHEINV, vm->codeBase, vm->codeLength); // test Cowcat
 
 	vm->destroy = VM_Destroy_Compiled;
 	vm->compiled = qtrue;

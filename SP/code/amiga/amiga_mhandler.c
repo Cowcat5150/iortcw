@@ -1,13 +1,8 @@
-
 //#include "../renderer/tr_local.h" // This messes up DoIO() warpos gcc. Go figure...
 #include "../client/client.h"
 #include "amiga_local.h"
 
-#ifdef __VBCC__
-#pragma amiga-align
-#elif defined(WARPUP)
 #pragma pack(push,2)
-#endif
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -16,11 +11,7 @@
 #include <devices/inputevent.h>
 #include <clib/alib_protos.h>
 
-#ifdef __VBCC__
-#pragma default-align
-#elif defined (WARPUP)
 #pragma pack(pop)
-#endif
 
 extern qboolean mouse_avail;
 
@@ -89,11 +80,11 @@ void MouseHandler (void)
 	{
 		//Com_Printf("mousehandler\n");
 
-		if ( InputPort = CreateMsgPort() )
+		if ( ( InputPort = CreateMsgPort() ) )
 		{
-			if ( InputIO = (struct IOStdReq *) CreateIORequest(InputPort, sizeof(struct IOStdReq)) )
+			if ( ( InputIO = (struct IOStdReq *) CreateIORequest(InputPort, sizeof(struct IOStdReq)) ) )
 			{
-				if(!OpenDevice( "input.device", 0, (struct IORequest *)InputIO, 0 ))
+				if( !OpenDevice( "input.device", 0, (struct IORequest *)InputIO, 0 ) )
 				{
 					InputHandler.is_Node.ln_Type = NT_INTERRUPT;
 					InputHandler.is_Node.ln_Pri = 90;
@@ -105,8 +96,6 @@ void MouseHandler (void)
 					DoIO((struct IORequest *)InputIO);
 
 					mhandler = qtrue;
-
-					return;
 				}
 			}
 		}

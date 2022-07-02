@@ -60,8 +60,8 @@ cvar_t *r_mintriarea;
 
 extern cvar_t *in_nograb;
 
-struct MsgPort *Sys_EventPort = 0;
-struct Window *win = NULL;
+struct MsgPort *Sys_EventPort;
+struct Window *win;
 
 void (APIENTRYP qglActiveTextureARB) (GLenum texture);
 void (APIENTRYP qglClientActiveTextureARB) (GLenum texture);
@@ -219,7 +219,7 @@ static qboolean GLW_StartDriverAndSetMode( int mode, int colorbits, qboolean ful
 		ri.Printf(PRINT_ALL, "GL_Perspective_Correction_hint: fast\n");
 	}
 
-	if(r_mintriarea->value) // screenwidth *screenheight/75000 (rounded)
+	if(r_mintriarea->value) // screenwidth * screenheight/75000 (rounded)
 	{
 		mglMinTriArea(r_mintriarea->value);
 		ri.Printf(PRINT_ALL, "MinTriArea: %1.1f\n", r_mintriarea->value);
@@ -239,7 +239,8 @@ static void GLW_Shutdown(void)
 
 	MGLTerm();
 
-	Sys_EventPort = NULL;
+	Sys_EventPort = 0;
+	win = 0;
 }
 
 static qboolean GLW_LoadOpenGL()
@@ -475,6 +476,8 @@ void GLimp_Init(void)
 
 	ModifyIDCMP(win, IDCMP_RAWKEY|IDCMP_MOUSEBUTTONS|IDCMP_MOUSEMOVE|IDCMP_DELTAMOVE);
 	win->Flags |= WFLG_REPORTMOUSE;
+
+	//SetMouseQueue (win, 50); // test Cowcat
 
 	Sys_EventPort = win->UserPort;
 

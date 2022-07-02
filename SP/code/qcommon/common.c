@@ -58,7 +58,7 @@ int demo_protocols[] =
 #define MIN_COMHUNKMEGS		54
 
 #if defined(AMIGAOS)
-#define DEF_COMHUNKMEGS 	72
+#define DEF_COMHUNKMEGS 	74
 #else //MORPHOS
 #define DEF_COMHUNKMEGS 	128
 #endif
@@ -1614,7 +1614,6 @@ sysEvent_t Com_GetSystemEvent( void )
 #define MASK_QUEUED_EVENTS ( MAX_QUEUED_EVENTS - 1 )
 
 static sysEvent_t	eventQueue[ MAX_QUEUED_EVENTS ];
-//static sysEvent_t 	*lastEvent = NULL;
 static sysEvent_t	*lastEvent = eventQueue + MAX_QUEUED_EVENTS - 1; // new
 static unsigned int	eventHead = 0;
 static unsigned int	eventTail = 0;
@@ -1648,29 +1647,6 @@ void Com_QueueEvent( int evTime, sysEventType_t evType, int value, int value2, i
 
 	// combine mouse movement with previous mouse event
 
-	#if 0
-
-	if( evType == SE_MOUSE && lastEvent && lastEvent->evType == SE_MOUSE )
-	{
-		if ( eventTail == eventHead )
-		{
-			lastEvent->evValue = value;
-			lastEvent->evValue2 = value2;
-			eventTail--;
-		}
-			
-		else
-		{
-			lastEvent->evValue += value;
-			lastEvent->evValue2 += value2;
-		}
-
-		lastEvent->evTime = evTime;
-		return;
-	}
-
-	#else // new
-
 	if( evType == SE_MOUSE && lastEvent->evType == SE_MOUSE && eventHead != eventTail )
 	{
 		lastEvent->evValue += value;
@@ -1678,8 +1654,6 @@ void Com_QueueEvent( int evTime, sysEventType_t evType, int value, int value2, i
 		lastEvent->evTime = evTime;
 		return;
 	}
-
-	#endif
 
 	ev = &eventQueue[ eventHead & MASK_QUEUED_EVENTS ];
 
@@ -1715,28 +1689,21 @@ Com_GetSystemEvent
 ================
 */
 
+extern void IN_ProcessEvents(void);
+
 sysEvent_t Com_GetSystemEvent( void )
 {
 	sysEvent_t  ev;
+	
+	#if 0
+
 	char        *s;
 	int	    evTime;
 
 	// return if we have data
 
-	#if 0
-
-	if ( eventHead > eventTail )
-	{
-		eventTail++;
-		return eventQueue[ ( eventTail - 1 ) & MASK_QUEUED_EVENTS ];
-	}
-
-	#else // new
-
 	if ( eventHead - eventTail > 0)
 		return eventQueue[ ( eventTail++ ) & MASK_QUEUED_EVENTS ];
-
-	#endif
 
 	evTime = Sys_Milliseconds();
 
@@ -1754,26 +1721,19 @@ sysEvent_t Com_GetSystemEvent( void )
 		Com_QueueEvent( evTime, SE_CONSOLE, 0, 0, len, b );
 	}
 
+	#endif
+
 	// return if we have data
-
-	#if 0
-
-	if ( eventHead > eventTail )
-	{
-		eventTail++;
-		return eventQueue[ ( eventTail - 1 ) & MASK_QUEUED_EVENTS ];
-	}
-
-	#else // new
-
 	if ( eventHead - eventTail > 0)
 		return eventQueue[ ( eventTail++ ) & MASK_QUEUED_EVENTS ];
 
-	#endif
+	//IN_Frame(); // Cowcat new
+	IN_ProcessEvents();
 
 	// create an empty event to return
 	memset( &ev, 0, sizeof( ev ) );
-	ev.evTime = evTime;
+	//ev.evTime = evTime;
+	ev.evTime = Sys_Milliseconds();
 
 	return ev;
 }
@@ -1789,25 +1749,35 @@ extern sysEvent_t Sys_GetEvent();
 Com_GetRealEvent
 =================
 */
-sysEvent_t  Com_GetRealEvent( void ) {
-	int r;
-	sysEvent_t ev;
+sysEvent_t  Com_GetRealEvent( void )
+{
+	int		r;
+	sysEvent_t	ev;
 
 	// either get an event from the system or the journal file
-	if ( com_journal->integer == 2 ) {
+	if ( com_journal->integer == 2 )
+	{
 		r = FS_Read( &ev, sizeof( ev ), com_journalFile );
-		if ( r != sizeof( ev ) ) {
+
+		if ( r != sizeof( ev ) )
+		{
 			Com_Error( ERR_FATAL, "Error reading from journal file" );
 		}
-		if ( ev.evPtrLength ) {
+
+		if ( ev.evPtrLength )
+		{
 			ev.evPtr = Z_Malloc( ev.evPtrLength );
 			r = FS_Read( ev.evPtr, ev.evPtrLength, com_journalFile );
-			if ( r != ev.evPtrLength ) {
+
+			if ( r != ev.evPtrLength )
+			{
 				Com_Error( ERR_FATAL, "Error reading from journal file" );
 			}
 		}
-	} else {
+	}
 
+	else
+	{
 		#if defined(MORPHOS)
 		ev = Sys_GetEvent();
 		#else
@@ -1815,13 +1785,19 @@ sysEvent_t  Com_GetRealEvent( void ) {
 		#endif
 
 		// write the journal value out if needed
-		if ( com_journal->integer == 1 ) {
+		if ( com_journal->integer == 1 )
+		{
 			r = FS_Write( &ev, sizeof( ev ), com_journalFile );
-			if ( r != sizeof( ev ) ) {
+
+			if ( r != sizeof( ev ) )
+			{
 				Com_Error( ERR_FATAL, "Error writing to journal file" );
 			}
-			if ( ev.evPtrLength ) {
+
+			if ( ev.evPtrLength )
+			{
 				r = FS_Write( ev.evPtr, ev.evPtrLength, com_journalFile );
+
 				if ( r != ev.evPtrLength ) {
 					Com_Error( ERR_FATAL, "Error writing to journal file" );
 				}
@@ -1839,7 +1815,8 @@ Com_InitPushEvent
 =================
 */
 // bk001129 - added
-void Com_InitPushEvent( void ) {
+void Com_InitPushEvent( void )
+{
 	// clear the static buffer array
 	// this requires SE_NONE to be accepted as a valid but NOP event
 	memset( com_pushedEvents, 0, sizeof( com_pushedEvents ) );
@@ -1855,25 +1832,32 @@ void Com_InitPushEvent( void ) {
 Com_PushEvent
 =================
 */
-void Com_PushEvent( sysEvent_t *event ) {
-	sysEvent_t      *ev;
-	static int printedWarning = 0;
+void Com_PushEvent( sysEvent_t *event )
+{
+	sysEvent_t	*ev;
+	static int	printedWarning = 0;
 
 	ev = &com_pushedEvents[ com_pushedEventsHead & ( MAX_PUSHED_EVENTS - 1 ) ];
 
-	if ( com_pushedEventsHead - com_pushedEventsTail >= MAX_PUSHED_EVENTS ) {
-
+	if ( com_pushedEventsHead - com_pushedEventsTail >= MAX_PUSHED_EVENTS )
+	{
 		// don't print the warning constantly, or it can give time for more...
-		if ( !printedWarning ) {
+		if ( !printedWarning )
+		{
 			printedWarning = qtrue;
 			Com_Printf( "WARNING: Com_PushEvent overflow\n" );
 		}
 
-		if ( ev->evPtr ) {
+		if ( ev->evPtr )
+		{
 			Z_Free( ev->evPtr );
 		}
+
 		com_pushedEventsTail++;
-	} else {
+	}
+
+	else
+	{
 		printedWarning = qfalse;
 	}
 
@@ -1886,11 +1870,23 @@ void Com_PushEvent( sysEvent_t *event ) {
 Com_GetEvent
 =================
 */
-sysEvent_t  Com_GetEvent( void ) {
-	if ( com_pushedEventsHead > com_pushedEventsTail ) {
+sysEvent_t Com_GetEvent( void )
+{
+	#if 0
+
+	if ( com_pushedEventsHead > com_pushedEventsTail )
+	{
 		com_pushedEventsTail++;
 		return com_pushedEvents[ ( com_pushedEventsTail - 1 ) & ( MAX_PUSHED_EVENTS - 1 ) ];
 	}
+
+	#else // quake3e
+
+	if ( com_pushedEventsHead - com_pushedEventsTail > 0)
+		return com_pushedEvents[ (com_pushedEventsTail++) & (MAX_PUSHED_EVENTS-1) ];
+
+	#endif
+
 	return Com_GetRealEvent();
 }
 
@@ -2980,7 +2976,7 @@ void Com_Frame( void )
 
 	} while(Com_TimeVal(minMsec));
 
-	IN_Frame();
+	//IN_Frame(); // new Cowcat
 	
 	lastTime = com_frameTime;
 	com_frameTime = Com_EventLoop();

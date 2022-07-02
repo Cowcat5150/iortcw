@@ -765,7 +765,11 @@ int Com_HexStrToInt( const char *str )
 
 			n *= 16;
 
+			#if defined(AMIGAOS) || defined (__GCC__)
+			digit = tolower( (unsigned char) str[ i ] );
+			#else
 			digit = tolower( str[ i ] );
+			#endif
 
 			if( digit >= '0' && digit <= '9' )
 				digit -= '0';
@@ -913,9 +917,20 @@ void Q_strncpyz( char *dest, const char *src, int destsize ) {
 		Com_Error(ERR_FATAL,"Q_strncpyz: destsize < 1" ); 
 	}
 
+	#if 0
+
 	strncpy( dest, src, destsize-1 );
 
 	dest[destsize-1] = 0;
+
+	#else // Quake3e test
+
+	while( --destsize > 0 && (*dest++ = *src++) != '\0' )
+		;
+
+	*dest = '\0';
+
+	#endif
 }
                  
 int Q_stricmpn (const char *s1, const char *s2, int n)
@@ -978,9 +993,45 @@ int Q_strncmp( const char *s1, const char *s2, int n )
 	return 0;       // strings are equal
 }
 
+#if 0
+
 int Q_stricmp( const char *s1, const char *s2 ) {
 	return ( s1 && s2 ) ? Q_stricmpn( s1, s2, 99999 ) : -1;
 }
+
+#else // test Cowcat
+
+static inline int q_toupper(int c)
+{
+	return ( (c >= 'a' && c <= 'z') ? (c & ~('a' - 'A')) : c );
+}
+
+int Q_stricmp (const char *s1, const char *s2)
+{
+	if ( s1 == NULL )
+	{
+		if ( s2 == NULL )
+			return 0;
+
+		else
+			return -1;
+	}
+
+	else if ( s2 == NULL )
+		return 1;
+
+	while( q_toupper(*s1) == q_toupper(*s2) )
+	{
+		if (*s1 == 0)
+			return 0;
+
+		s1++;
+		s2++;
+	}
+
+	return q_toupper(*(unsigned const char*)s1) - q_toupper(*(unsigned const char *)(s2));
+}
+#endif
 
 char *Q_strlwr( char *s1 )
 {
@@ -990,7 +1041,12 @@ char *Q_strlwr( char *s1 )
 
 	while ( *s )
 	{
+		#if defined (AMIGAOS) || defined (__GCC__)
+		*s = tolower((unsigned char)*s);
+		#else
 		*s = tolower( *s );
+		#endif
+
 		s++;
 	}
 
@@ -1005,7 +1061,12 @@ char *Q_strupr( char *s1 )
 
 	while ( *s )
 	{
+		#if defined (AMIGAOS) || defined (__GCC__)
+		*s = toupper((unsigned char)*s);
+		#else
 		*s = toupper( *s );
+		#endif
+
 		s++;
 	}
 

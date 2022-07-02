@@ -347,7 +347,7 @@ static INLINE ULONG TransformRange(GLcontext context, const int first, const int
 {
 	int	i;
 	ULONG	border;
-	int	offs = first+context->ArrayPointer.transformed;
+	int	offs = first + context->ArrayPointer.transformed;
 
 	#define a(x) (context->CombinedMatrix.v[OF_##x])
 
@@ -434,7 +434,7 @@ static INLINE ULONG TransformRange(GLcontext context, const int first, const int
 			{
 				local_outcode |= MGL_CLIP_NEGW;
 			}
-     
+
 			if (-tw > tx)
 			{
 				local_outcode |= MGL_CLIP_LEFT;
@@ -535,13 +535,14 @@ static INLINE ULONG TransformRange(GLcontext context, const int first, const int
 		do
 		{
 			ULONG local_outcode = 0;
+
 			float cw = v->bw;
 
 			if (cw < CLIP_EPS )
 			{
 				local_outcode |= MGL_CLIP_NEGW;
 			}
-	
+
 			if (-cw > v->bx)
 			{
 				local_outcode |= MGL_CLIP_LEFT;
@@ -561,7 +562,7 @@ static INLINE ULONG TransformRange(GLcontext context, const int first, const int
 			{
 				local_outcode |= MGL_CLIP_TOP;
 			}
-	
+			
 			if (-cw > v->bz)
 			{
 				local_outcode |= MGL_CLIP_BACK;
@@ -594,7 +595,7 @@ static INLINE void ProjectRange(GLcontext context, const int first, const int si
 	UBYTE	*pointer;
 	float	az;
 
-	int offs = first+context->ArrayPointer.transformed;
+	int offs = first + context->ArrayPointer.transformed;
 	MGLVertex *v = &context->VertexBuffer[offs];
 	stride = context->ArrayPointer.texcoordstride;
 	pointer = context->ArrayPointer.w_buffer + first * stride;
@@ -668,7 +669,7 @@ static INLINE void ProjectRangeByOutcode(GLcontext context, const int first, con
 	UBYTE	*pointer;
 	float	az;
 
-	int offs = first+context->ArrayPointer.transformed;
+	int offs = first + context->ArrayPointer.transformed;
 	MGLVertex *v = &context->VertexBuffer[offs];
 	stride = context->ArrayPointer.texcoordstride;
 	pointer = context->ArrayPointer.w_buffer + first * stride;
@@ -2496,6 +2497,7 @@ static void E_DrawFlatFan(GLcontext context, const int count, const UWORD *idx)
 
 //Range guardband-check added 18-05-02 (surgeon)
 
+#if 0 // not used - Cowcat 
 static INLINE ULONG TestRangeGuardBand(GLcontext context, const GLuint first, const GLsizei count)
 {
 	int i; 
@@ -2504,7 +2506,7 @@ static INLINE ULONG TestRangeGuardBand(GLcontext context, const GLuint first, co
 
 	ret = 0;
 
-	v = &context->VertexBuffer[first+context->ArrayPointer.transformed];
+	v = &context->VertexBuffer[first + context->ArrayPointer.transformed];
 	i = count;
 
 	do
@@ -2528,6 +2530,7 @@ static INLINE ULONG TestRangeGuardBand(GLcontext context, const GLuint first, co
 
 	return ret;
 }
+#endif
 
 static INLINE ULONG EncodeRangeGuardBand(GLcontext context, const GLuint first, const GLsizei count)
 {
@@ -2536,7 +2539,7 @@ static INLINE ULONG EncodeRangeGuardBand(GLcontext context, const GLuint first, 
 	ULONG mustclip;
 	ULONG ret;
 
-	v = &context->VertexBuffer[first+context->ArrayPointer.transformed];
+	v = &context->VertexBuffer[first + context->ArrayPointer.transformed];
 	mustclip = context->ClipFlags;
 	ret = 0;
 
@@ -2863,6 +2866,7 @@ void GLDrawElements(GLcontext context, GLenum mode, GLsizei count, GLenum type, 
 	ULONG	*ul;
 	UWORD	*idx;
 	static EDrawfn E_Draw;
+	GLuint	ShadeModel_bypass; // Cowcat
 
 #ifdef VA_SANITY_CHECK
 	GLuint ShadeModel_bypass;
@@ -2969,11 +2973,17 @@ void GLDrawElements(GLcontext context, GLenum mode, GLsizei count, GLenum type, 
 	}
 
 #endif
-	#ifdef __VBCC__ // just for Q3 - Cowcat
-
-	GLuint ShadeModel_bypass; 
 
 	ShadeModel_bypass = 0;
+
+	// Cowcat
+	if ( !(context->ClientState & GLCS_COLOR) ) // Could happen while varray is locked.
+	{
+		glShadeModel(GL_FLAT);
+		ShadeModel_bypass |= 0x01;
+	}
+
+	#ifdef __VBCC__ // just for Q3 - Cowcat
 	
 	if((context->ShadeModel == GL_FLAT) && (context->ClientState & GLCS_COLOR))
 	{
@@ -2983,18 +2993,18 @@ void GLDrawElements(GLcontext context, GLenum mode, GLsizei count, GLenum type, 
 
 	#endif
 
-	// vertex arrays bugfix for non textured arrays - crash in ppc / debugger hit with 68k
+	// TPFlags bugfix for varrays without textures - crash in ppc / debugger hit with 68k - Cowcat
 
 	if(context->Texture2D_State[0] == GL_TRUE)
 	{
 		Set_W3D_Texture(context->w3dContext, 0, context->w3dTexBuffer[context->CurrentBinding]);
-		//context->w3dContext->TPFlags[0] = W3D_TEXCOORD_NORMALIZED; // fix Cowcat
+		//context->w3dContext->TPFlags[0] = W3D_TEXCOORD_NORMALIZED; // Cowcat
 	}
 
 	else 
 	{
 		Set_W3D_Texture(context->w3dContext, 0, NULL);
-		//context->w3dContext->TPFlags[0] = 0; // fix Cowcat
+		//context->w3dContext->TPFlags[0] = 0; // Cowcat
 	}
 
 	if(context->VertexArrayPipeline != GL_FALSE)
@@ -3120,6 +3130,13 @@ void GLDrawElements(GLcontext context, GLenum mode, GLsizei count, GLenum type, 
 
 #endif
 
+	// Cowcat
+
+	if(ShadeModel_bypass & 1)
+	{
+		glShadeModel(GL_SMOOTH);
+	}
+
 	#ifdef __VBCC__ // Just for Q3
 
 	if(ShadeModel_bypass & 2)
@@ -3129,4 +3146,5 @@ void GLDrawElements(GLcontext context, GLenum mode, GLsizei count, GLenum type, 
 
 	#endif
 }
+
 

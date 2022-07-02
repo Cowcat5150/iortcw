@@ -25,7 +25,7 @@ DO_CC_UI = $(CC) $(CFLAGS_DLL_UI) -o $@ -c $<
 DO_CC_CGAME = $(CC) $(CFLAGS_DLL_CGAME) -o $@ -c $<
 DO_CC_GAME = $(CC) $(CFLAGS_DLL_GAME) -o $@ -c $<
 
-LIBS = -lm -lmglRTCW -ldll -noixemul
+LIBS = -lm -lmglQ3 -ldll -noixemul
 LIBDLL = -lm -ldll -noixemul
 
 OBJS = \

@@ -731,10 +731,6 @@ Upload32
 ===============
 */
 
-#if defined(AMIGAOS) // Cowcat
-qboolean cinematic;
-#endif
-
 static void Upload32(   unsigned *data,
 						int width, int height,
 						qboolean mipmap,
@@ -947,11 +943,6 @@ static void Upload32(   unsigned *data,
 #endif
 					internalFormat = GL_LUMINANCE;
 			}
-
-			#if defined(AMIGAOS) // Cowcat
-			else if(cinematic)
-				internalFormat = GL_ALPHA; // hack
-			#endif
 
 			else
 			{
@@ -1217,8 +1208,6 @@ image_t *R_CreateImageExt( const char *name, byte *pic, int width, int height, i
 	int         glWrapClampMode;
 	long hash;
 	qboolean noCompress = qfalse;
-	
-	cinematic = qfalse; // Cowcat
 
 	if ( strlen( name ) >= MAX_QPATH ) {
 		ri.Error( ERR_DROP, "R_CreateImage: \"%s\" is too long", name );
@@ -1227,13 +1216,6 @@ image_t *R_CreateImageExt( const char *name, byte *pic, int width, int height, i
 		isLightmap = qtrue;
 		noCompress = qtrue;
 	}
-
-	#if defined(AMIGAOS) // Cowcat
-	if ( !strncmp( name, "*scratch", 8 ) )
-	{
-		cinematic = qtrue;
-	}
-	#endif
 
 	if ( !noCompress && strstr( name, "skies" ) ) {
 		noCompress = qtrue;

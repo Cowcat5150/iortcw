@@ -14,12 +14,9 @@
 
 #include "sysinc.h"
 
-
 #include <stdlib.h>
 #include <stdio.h>
-//#ifdef __VBCC__
 #include <string.h> //inlined memcpy
-//#endif
 
 //static char rcsid[] = "$Id: texture.c,v 1.1.1.1 2000/04/07 19:44:51 tfrieden Exp $";
 
@@ -722,7 +719,6 @@ static void A8_ARGB(GLcontext context, GLubyte *input, UWORD *output, int width,
 static void L8_ARGB(GLcontext context, GLubyte *input, UWORD *output, int width, int height)
 {
 	int	i, j;
-
 	GLubyte la, lb, lc;
 
 	for (i=0; i < height; i++)
@@ -731,6 +727,7 @@ static void L8_ARGB(GLcontext context, GLubyte *input, UWORD *output, int width,
 		{
 			la = lb = lc = *input++;
 			*output++ = ARGBFORM(0xff, la, lb, lc);
+			input += 3; // Cowcat
 		}
 
 		CORRECT_ALIGN
@@ -742,7 +739,7 @@ static void L8_ARGB(GLcontext context, GLubyte *input, UWORD *output, int width,
 static void RGBA_RGB(GLcontext context, GLubyte *input, UWORD *output, int width, int height)
 {
 	int	i, j;
-	UBYTE	r, g, b, a;
+	UBYTE	r, g, b; //, a;
 
 	for (i=0; i < height; i++)
 	{
@@ -751,7 +748,8 @@ static void RGBA_RGB(GLcontext context, GLubyte *input, UWORD *output, int width
 			r = *input++;
 			g = *input++;
 			b = *input++;
-			a = *input++;
+			//a = *input++;
+			input++;
 			*output++ = RGBFORM(r,g,b);
 		}
 
@@ -1005,6 +1003,7 @@ ULONG MGLConvert(GLcontext context, const GLvoid *inputp, UWORD *output, int wid
 			switch(format) // the format of the pixel (input) data
 			{
 				case GL_LUMINANCE:
+				case GL_RGBA: // Cowcat
 
 				#ifdef EIGHTBIT_TEXTURES
 					EIGHT_EIGHT(context, (GLubyte *)input, output, width, height);
@@ -1024,6 +1023,10 @@ ULONG MGLConvert(GLcontext context, const GLvoid *inputp, UWORD *output, int wid
 				case GL_LUMINANCE_ALPHA:
 					L8A8_L8A8(context, (GLubyte *)input, output, width, height);
 					return W3D_L8A8;
+
+				case GL_RGBA: // Cowcat
+					RGBA_ARGB(context, (GLubyte *)input, output, width, height);
+					return context->w3dAlphaFormat;
 			}
 
 			break;
@@ -1104,10 +1107,6 @@ ULONG MGLConvert(GLcontext context, const GLvoid *inputp, UWORD *output, int wid
 					return context->w3dAlphaFormat;
 			}
 
-			break;
-
-		case 0: // dummy - workaround for cinematics in Q3 engines - Cowcat
-			return context->w3dAlphaFormat;
 			break;
 	}
 	
@@ -1380,6 +1379,13 @@ void GLTexImage2DNoMIP(GLcontext context, GLenum gltarget, GLint level, GLint in
 
 	w = (ULONG)width;
 	h = (ULONG)height;
+	
+	// Cowcat
+	if (context->w3dTexBuffer[current] && ( w != context->w3dTexBuffer[current]->texwidth || h != context->w3dTexBuffer[current]->texheight ) )
+	{
+		W3D_FreeTexObj(context->w3dContext, context->w3dTexBuffer[current]);
+		context->w3dTexBuffer[current] = NULL;
+	}
 
 	if (context->w3dTexBuffer[current] == NULL)
 	{
@@ -1406,7 +1412,7 @@ void GLTexImage2DNoMIP(GLcontext context, GLenum gltarget, GLint level, GLint in
 	*/
 
 	useFormat = MGLConvert(context, pixels, (UWORD *)target, width, height, internalformat, format);
-
+	
 	/*
 	** Create a new W3D_Texture if none was present, using the converted
 	** data.

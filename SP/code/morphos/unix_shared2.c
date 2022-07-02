@@ -169,9 +169,9 @@ void Sys_ListFilteredFiles( const char *basedir, char *subdirs, char *filter, ch
 {
 	char		search[MAX_OSPATH], newsubdirs[MAX_OSPATH];
 	char		filename[MAX_OSPATH];
-	DIR			*fdir;
-	struct dirent *d;
-	struct stat st;
+	DIR		*fdir;
+	struct dirent	*d;
+	struct stat	st;
 
 	if ( *numfiles >= MAX_FOUND_FILES - 1 ) {
 		return;
@@ -180,6 +180,7 @@ void Sys_ListFilteredFiles( const char *basedir, char *subdirs, char *filter, ch
 	if (strlen(subdirs)) {
 		Com_sprintf( search, sizeof(search), "%s/%s", basedir, subdirs );
 	}
+
 	else {
 		Com_sprintf( search, sizeof(search), "%s", basedir );
 	}
@@ -188,13 +189,17 @@ void Sys_ListFilteredFiles( const char *basedir, char *subdirs, char *filter, ch
 		return;
 	}
 
-	while ((d = readdir(fdir)) != NULL) {
+	while ((d = readdir(fdir)) != NULL)
+	{
 		Com_sprintf(filename, sizeof(filename), "%s/%s", search, d->d_name);
+
 		if (stat(filename, &st) == -1)
 			continue;
 
-		if (st.st_mode & S_IFDIR) {
-			if (Q_stricmp(d->d_name, ".") && Q_stricmp(d->d_name, "..")) {
+		if (st.st_mode & S_IFDIR)
+		{
+			if (Q_stricmp(d->d_name, ".") && Q_stricmp(d->d_name, ".."))
+			{
 				if (strlen(subdirs)) {
 					Com_sprintf( newsubdirs, sizeof(newsubdirs), "%s/%s", subdirs, d->d_name);
 				}
@@ -204,12 +209,16 @@ void Sys_ListFilteredFiles( const char *basedir, char *subdirs, char *filter, ch
 				Sys_ListFilteredFiles( basedir, newsubdirs, filter, list, numfiles );
 			}
 		}
+
 		if ( *numfiles >= MAX_FOUND_FILES - 1 ) {
 			break;
 		}
+
 		Com_sprintf( filename, sizeof(filename), "%s/%s", subdirs, d->d_name );
+
 		if (!Com_FilterPath( filter, filename, qfalse ))
 			continue;
+
 		list[ *numfiles ] = CopyString( filename );
 		(*numfiles)++;
 	}

@@ -30,13 +30,13 @@ If you have questions concerning this license or the applicable additional terms
 #include "qgl.h"
 
 #ifdef AMIGAOS
-//#include <mgl/mglmacros.h>
+#include <mgl/mglmacros.h>
 #endif
 
 backEndData_t  *backEndData;
 backEndState_t backEnd;
 
-
+#if 0
 static float s_flipMatrix[16] = {
 	// convert from our coordinate system (looking down X)
 	// to OpenGL's coordinate system (looking down -Z)
@@ -45,7 +45,27 @@ static float s_flipMatrix[16] = {
 	0, 1, 0, 0,
 	0, 0, 0, 1
 };
+#endif
 
+#if 0
+const float *GL_Ortho( const float right, const float bottom )
+{
+	static float m[16] = { 0 };
+	
+	float width = 1.0f / right;
+	float height = 1.0f / bottom;
+
+	m[0] = 2.0f * width;
+	m[5] = -2.0f * height;
+	m[10] = -2.0f;
+	m[12] = -right * width;
+	m[13] = bottom * height;
+	m[14] = -1.0f;
+	m[15] = 1.0f;
+	
+	return m;
+}
+#endif
 
 /*
 ** GL_Bind
@@ -551,6 +571,7 @@ void RB_BeginDrawingView( void ) {
 	// we will only draw a sun if there was sky rendered in this view
 	backEnd.skyRenderedThisView = qfalse;
 
+	#if 0
 	// clip to the plane of the portal
 	if ( backEnd.viewParms.isPortal ) {
 		float plane[4];
@@ -578,6 +599,7 @@ void RB_BeginDrawingView( void ) {
 		qglDisable( GL_CLIP_PLANE0 );
 		#endif
 	}
+	#endif
 }
 
 /*
@@ -883,7 +905,7 @@ RB_RenderDrawSurfList
 ==================
 */
 void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
-	shader_t        *shader, *oldShader;
+	shader_t        *shader = NULL, *oldShader; // shader NULL - 1jun2022 - Cowcat
 	int fogNum, oldFogNum;
 	int entityNum, oldEntityNum;
 	int dlighted, oldDlighted;
@@ -1130,6 +1152,8 @@ void    RB_SetGL2D( void ) {
 	qglMatrixMode( GL_PROJECTION );
 	qglLoadIdentity();
 	qglOrtho( 0, glConfig.vidWidth, glConfig.vidHeight, 0, 0, 1 );
+	
+	//qglLoadMatrixf( GL_Ortho( glConfig.vidWidth, glConfig.vidHeight ) );
 	qglMatrixMode( GL_MODELVIEW );
 	qglLoadIdentity();
 
@@ -1193,7 +1217,6 @@ void RE_StretchRaw( int x, int y, int w, int h, int cols, int rows, const byte *
 	}
 
 	RE_UploadCinematic (w, h, cols, rows, data, client, dirty);
-	GL_Bind( tr.scratchImage[client] );
 
 	if ( r_speeds->integer ) {
 		end = ri.Milliseconds();
@@ -1260,7 +1283,7 @@ void RE_UploadCinematic( int w, int h, int cols, int rows, const byte *data, int
 		qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 #else
 		#if defined(AMIGAOS)
-		qglTexImage2D( GL_TEXTURE_2D, 0, 0, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data ); // minigl workaround - Cowcat
+		qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 		#else
 		qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 		#endif

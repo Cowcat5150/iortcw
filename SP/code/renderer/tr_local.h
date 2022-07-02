@@ -1347,8 +1347,7 @@ void R_TagInfo_f( void );
 void R_AddPolygonSurfaces( void );
 
 // GR - add tessellation flag
-void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader,
-					  int *fogNum, int *dlightMap, int *atiTess );
+void R_DecomposeSort( unsigned sort, int *entityNum, shader_t **shader, int *fogNum, int *dlightMap, int *atiTess );
 
 // GR - add tessellation flag
 void R_AddDrawSurf( surfaceType_t *surface, shader_t *shader, int fogIndex, int dlightMap, int atiTess );

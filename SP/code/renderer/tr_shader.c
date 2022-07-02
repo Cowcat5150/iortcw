@@ -70,7 +70,12 @@ static long generateHashValue( const char *fname ) {
 	hash = 0;
 	i = 0;
 	while ( fname[i] != '\0' ) {
+		#if defined(AMIGA) || defined (__GCC__)
+		letter = tolower((unsigned char)fname[i]);
+		#else
 		letter = tolower( fname[i] );
+		#endif
+
 		if ( letter == '.' ) {
 			break;                          // don't include extension
 		}
@@ -1253,7 +1258,7 @@ ParseSort
 =================
 */
 void ParseSort( char **text ) {
-	char    *token;
+	char    *token; //, *end; // end Cowcat
 
 	token = COM_ParseExt( text, qfalse );
 	if ( token[0] == 0 ) {
@@ -1281,6 +1286,24 @@ void ParseSort( char **text ) {
 		shader.sort = SS_UNDERWATER;
 	} else {
 		shader.sort = atof( token );
+
+		#if 0
+		// test Cowcat
+		shader.sort = strtof( token, &end );
+
+		if(end == token){
+			shader.sort = 0;
+		}
+
+		else if ( shader.sort == 0 )
+		{
+		}
+		/*
+		else if (floor (shader.sort) < 1 || floor ( shader.sort ) >> SS_MAX_SORT )
+			shader.sort = Com_Clamp ( 1, SS_MAX_SORT - 1 , shader.sort);
+		}
+		*/
+		#endif
 	}
 }
 

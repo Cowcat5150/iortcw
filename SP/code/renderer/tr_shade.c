@@ -32,6 +32,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #ifdef AMIGAOS
 #include <mgl/mglmacros.h>
+extern cvar_t *r_mintriarea;
 #endif
 
 /*
@@ -198,22 +199,135 @@ static void R_DrawStripElements( int numIndexes, const glIndex_t *indexes, void 
 
 #if defined(AMIGAOS) || defined(MORPHOS)
 
-static UWORD ElementIndex[4096];
+static void APIENTRY R_ArrayElementDiscrete( GLint index )
+{
+	qglColor4ubv( tess.svars.colors[ index ] );
 
-static void R_DrawStripElementsAmiga( int numIndexes, const glIndex_t *indexes )
+	#if 0 // Cowcat
+	if ( glState.currenttmu )
+	{
+		qglMultiTexCoord2fARB( 0, tess.svars.texcoords[ 0 ][ index ][0], tess.svars.texcoords[ 0 ][ index ][1] );
+		qglMultiTexCoord2fARB( 1, tess.svars.texcoords[ 1 ][ index ][0], tess.svars.texcoords[ 1 ][ index ][1] );
+	}
+
+	else
+	#endif
+	{
+		qglTexCoord2fv( tess.svars.texcoords[ 0 ][ index ] );
+	}
+
+	qglVertex3fv( tess.xyz[ index ] );
+}
+
+/*
+static void APIENTRY R_ArrayElement( GLint index ) 
+{
+	qglArrayElement(index);
+}
+*/
+
+static void R_DrawStripElements( int numIndexes, const glIndex_t *indexes, void ( APIENTRY *element )(GLint) )
 {
 	int		i;
-	int		last0, last1, last2;
+	glIndex_t	last0, last1, last2;
 	qboolean	even;
 
 	if ( numIndexes <= 0 )
 		return;
 
+	qglBegin( GL_TRIANGLE_STRIP );
+
+	glIndex_t indexes0 = indexes[0];
+	glIndex_t indexes1 = indexes[1];
+	glIndex_t indexes2 = indexes[2];
+
+	// prime the strip
+	element( indexes0 );
+	element( indexes1 );
+	element( indexes2 );
+
+	last0 = indexes0;
+	last1 = indexes1;
+	last2 = indexes2;
+	
+	even = qfalse;
+
+	for ( i = 3; i < numIndexes; i += 3 )
+	{
+		indexes0 = indexes[i+0];
+		indexes1 = indexes[i+1];
+		indexes2 = indexes[i+2];
+
+		// odd numbered triangle in potential strip
+		if ( !even )
+		{
+			// check previous triangle to see if we're continuing a strip
+			if ( ( indexes0 == last2 ) && ( indexes1 == last1 ) )
+			{
+				element( indexes2 );
+				even = qtrue;
+			}
+
+			else
+				goto startnewstrip;
+		}
+
+		else
+		{
+			// check previous triangle to see if we're continuing a strip
+			if ( ( last2 == indexes1 ) && ( last0 == indexes0 ) )
+			{
+				element( indexes2 );
+			}
+
+			// otherwise we're done with this strip so finish it and start
+			// a new one
+			else
+			{
+		startnewstrip:
+				qglEnd();
+
+				qglBegin( GL_TRIANGLE_STRIP );
+
+				element( indexes0 );
+				element( indexes1 );
+				element( indexes2 );
+			}
+
+			even = qfalse;
+		}
+
+		// cache the last three vertices
+		last0 = indexes0;
+		last1 = indexes1;
+		last2 = indexes2;
+	}
+
+	qglEnd();
+}
+
+#if !defined(AMIGAOS)
+static UWORD ElementIndex[4096];
+#endif
+
+static void R_DrawStripElementsAmiga( int numIndexes, const glIndex_t *indexes )
+{
+	int		i;
+	glIndex_t	last0, last1, last2;
+	qboolean	even;
+
+	//if ( numIndexes <= 0 )
+		//return;
+
+	#if defined(AMIGAOS)
+	UWORD *ElementIndex = CC->ElementIndex; // mglmacros.h
+	#endif
+
 	unsigned int VertexPointer = 0;
 
-	int indexes0 = indexes[0];
-	int indexes1 = indexes[1];
-	int indexes2 = indexes[2];
+	glIndex_t indexes0 = indexes[0];
+	glIndex_t indexes1 = indexes[1];
+	glIndex_t indexes2 = indexes[2];
 
 	// prime the strip
 	ElementIndex[VertexPointer++] = indexes0;
@@ -330,18 +444,32 @@ void R_DrawElements( int numIndexes, const glIndex_t *indexes )
 
 #else // Cowcat
 
+	if(r_mintriarea->value)
+	{
+		if(backEnd.currentEntity->e.hModel && !backEnd.projection2D)
+			CC->MinTriArea = 0.3;
+
+		else
+			CC->MinTriArea = r_mintriarea->value;
+	}
+
 	if ( primitives == 0 )
 	{
 		qglDrawElements( GL_TRIANGLES, numIndexes, GL_INDEX_TYPE, (void *)indexes );
 		return;
 	}
 
-	else if ( primitives == 1 )
+	if ( primitives == 1 )
 	{
 		R_DrawStripElementsAmiga( numIndexes, indexes );
 		return;
 	}
 
+	if ( primitives == 3 )
+	{
+		R_DrawStripElements( numIndexes, indexes, R_ArrayElementDiscrete );
+		return;
+	}
 #endif
 
 	// anything else will cause no drawing
@@ -725,7 +853,7 @@ static void ProjectDlightTexture_scalar( void )
 
 				else {
 					//dist[2] = Q_fabs(dist[2]);
-					dist[2] = fabs(dist[2]); // Cowcat
+					*((int*)&dist[2]) &= 0x7FFFFFFF; // Quake3e
 
 					if ( dist[2] < radius * 0.5f ) {
 						modulate = 1.0f;
@@ -1639,7 +1767,9 @@ void RB_StageIteratorGeneric( void )
 	// now do any dynamic lighting needed
 	//
 	if ( tess.dlightBits && tess.shader->sort <= SS_OPAQUE
-		 && !( tess.shader->surfaceFlags & ( SURF_NODLIGHT | SURF_SKY ) ) ) {
+	//if ( tess.dlightBits && tess.shader->fogPass  // test Cowcat
+		 && !( tess.shader->surfaceFlags & ( SURF_NODLIGHT | SURF_SKY ) ) )
+	{
 		ProjectDlightTexture();
 	}
 

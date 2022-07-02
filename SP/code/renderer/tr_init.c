@@ -311,13 +311,15 @@ void GL_CheckErrors( void ) {
 	int err;
 	char s[64];
 
+	if ( r_ignoreGLErrors->integer ) {
+		return;
+	}
+
 	err = qglGetError();
 	if ( err == GL_NO_ERROR ) {
 		return;
 	}
-	if ( r_ignoreGLErrors->integer ) {
-		return;
-	}
+	
 	switch ( err ) {
 	case GL_INVALID_ENUM:
 		strcpy( s, "GL_INVALID_ENUM" );
@@ -1180,8 +1182,8 @@ void GfxInfo_f( void )
 		else if ( primitives == 1 )
 			ri.Printf( PRINT_ALL, "multiple glArrayElement\n" );
 
-		//else if ( primitives == 3 )
-			//ri.Printf( PRINT_ALL, "multiple glColor4ubv + glTexCoord2fv + glVertex3fv\n" );
+		else if ( primitives == 3 )
+			ri.Printf( PRINT_ALL, "multiple glColor4ubv + glTexCoord2fv + glVertex3fv\n" );
 
 		#endif
 		

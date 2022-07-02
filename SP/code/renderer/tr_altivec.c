@@ -76,6 +76,7 @@ void ProjectDlightTexture_altivec( void )
 	modulatePerm = vec_lvsl(0,(float *)&modulate);
 	modulatePerm = (vector unsigned char)vec_splat((vector unsigned int)modulatePerm,0);
 	zero = (vector float)vec_splat_s8(0);
+	//zero = (vector float)vec_splat_u32(0); // Cowcat new
 
 	for ( l = 0 ; l < backEnd.refdef.num_dlights ; l++ )
 	{
@@ -308,6 +309,7 @@ void RB_CalcDiffuseColor_altivec( unsigned char *colors )
 	lightDirVec = vec_perm(lightDirVec,jVec,jVecChar);	 
  
 	zero = (vector float)vec_splat_s8(0);
+	//zero = (vector float)vec_splat_u32(0); // Cowcat new
 	VectorCopy( ent->lightDir, lightDir );
 
 	v = tess.xyz[0];
@@ -379,6 +381,7 @@ void LerpMeshVertexes_altivec(md3Surface_t *surf, float backlerp)
 		newNormalsLoadPermute = vec_lvsl(0,newXyz);
 		newNormalsStorePermute = vec_lvsr(0,outXyz);
 		zero = (vector float)vec_splat_s8(0);
+		//zero = (vector float)vec_splat_u32(0); // Cowcat new
 		//
 		// just copy the vertexes
 		//

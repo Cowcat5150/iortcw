@@ -258,12 +258,32 @@ ClearSkyBox
 ==============
 */
 static void ClearSkyBox( void ) {
+
+	#if 1
+
 	int i;
 
 	for ( i = 0 ; i < 6 ; i++ ) {
 		sky_mins[0][i] = sky_mins[1][i] = 9999;
 		sky_maxs[0][i] = sky_maxs[1][i] = -9999;
 	}
+
+	#else
+
+	static const float mins[2][6] = {
+		{ 9999, 9999, 9999, 9999, 9999, 9999 },
+		{ 9999, 9999, 9999, 9999, 9999, 9999 }
+	};
+
+	static const float maxs[2][6] = {
+		{ -9999, -9999, -9999, -9999, -9999, -9999 },
+		{ -9999, -9999, -9999, -9999, -9999, -9999 }
+	};
+
+	memcpy ( sky_mins, mins, sizeof(mins) );
+	memcpy ( sky_maxs, maxs, sizeof(maxs) );
+
+	#endif
 }
 
 /*
@@ -349,25 +369,25 @@ static void MakeSkyVec( float s, float t, int axis, float outSt[2], vec3_t outXY
 		}
 	}
 
-	// avoid bilerp seam
-	s = ( s + 1 ) * 0.5;
-	t = ( t + 1 ) * 0.5;
-	if ( s < sky_min ) {
-		s = sky_min;
-	} else if ( s > sky_max )     {
-		s = sky_max;
-	}
+	if ( outSt )
+	{
+		// avoid bilerp seam
+		s = ( s + 1 ) * 0.5;
+		t = ( t + 1 ) * 0.5;
+		if ( s < sky_min ) {
+			s = sky_min;
+		} else if ( s > sky_max )     {
+			s = sky_max;
+		}
 
-	if ( t < sky_min ) {
-		t = sky_min;
-	} else if ( t > sky_max )     {
-		t = sky_max;
-	}
+		if ( t < sky_min ) {
+			t = sky_min;
+		} else if ( t > sky_max )     {
+			t = sky_max;
+		}
 
-	t = 1.0 - t;
+		t = 1.0 - t;
 
-
-	if ( outSt ) {
 		outSt[0] = s;
 		outSt[1] = t;
 	}
@@ -726,13 +746,74 @@ static void DrawSkyBoxInner( shader_t *shader ) {
 
 }
 
-static void FillCloudySkySide( const int mins[2], const int maxs[2], qboolean addIndexes ) {
+#if 0 // test Cowcat
+static qboolean CullPoints ( vec4_t v[], const int count )
+{
+	const cplane_t	*frust;
+	int		i, j;
+	float		dist;
+
+	for ( i = 0; i < 4; i++ )
+	{
+		frust = &backEnd.viewParms.frustum[i];
+
+		for ( j = 0; j < count; j++ )
+		{
+			dist = DotProduct ( v[j], frust->normal ) - frust->dist;
+
+			if (dist >= 0)
+				break;
+		}
+
+		if ( j == count )
+			return qtrue;
+	}
+
+	return qfalse;
+}
+
+static qboolean CullSkySide ( const int mins[2], const int maxs[2] )
+{
+	int	s, t;
+	vec4_t	v[4];
+
+	s = mins[0] + HALF_SKY_SUBDIVISIONS;
+	t = mins[1] + HALF_SKY_SUBDIVISIONS;
+	VectorAdd( s_skyPoints[t][s], backEnd.viewParms.or.origin, v[0] );
+
+	s = mins[0] + HALF_SKY_SUBDIVISIONS;
+	t = maxs[1] + HALF_SKY_SUBDIVISIONS;
+	VectorAdd( s_skyPoints[t][s], backEnd.viewParms.or.origin, v[1] );
+
+	s = maxs[0] + HALF_SKY_SUBDIVISIONS;
+	t = mins[1] + HALF_SKY_SUBDIVISIONS;
+	VectorAdd( s_skyPoints[t][s], backEnd.viewParms.or.origin, v[2] );
+
+	s = maxs[0] + HALF_SKY_SUBDIVISIONS;
+	t = maxs[1] + HALF_SKY_SUBDIVISIONS;
+	VectorAdd( s_skyPoints[t][s], backEnd.viewParms.or.origin, v[3] );
+
+	if ( CullPoints (v , 4 ) )
+		return qtrue;
+
+	return qfalse;
+}
+#endif
+
+static void FillCloudySkySide( const int mins[2], const int maxs[2] ) {
 	int s, t;
 	int vertexStart = tess.numVertexes;
 	int tHeight, sWidth;
 
 	tHeight = maxs[1] - mins[1] + 1;
 	sWidth = maxs[0] - mins[0] + 1;
+
+	//if ( CullSkySide (mins, maxs ) ) // test Cowcat
+		//return;
+
+	if ( tess.numVertexes + tHeight * sWidth > SHADER_MAX_VERTEXES ) {
+			ri.Error( ERR_DROP, "SHADER_MAX_VERTEXES hit in FillCloudySkySide()" );
+	}
 
 	for ( t = mins[1] + HALF_SKY_SUBDIVISIONS; t <= maxs[1] + HALF_SKY_SUBDIVISIONS; t++ )
 	{
@@ -743,15 +824,12 @@ static void FillCloudySkySide( const int mins[2], const int maxs[2], qboolean ad
 			tess.texCoords[tess.numVertexes][0][1] = s_skyTexCoords[t][s][1];
 
 			tess.numVertexes++;
-
-			if ( tess.numVertexes >= SHADER_MAX_VERTEXES ) {
-				ri.Error( ERR_DROP, "SHADER_MAX_VERTEXES hit in FillCloudySkySide()" );
-			}
 		}
 	}
 
 	// only add indexes for one pass, otherwise it would draw multiple times for each pass
-	if ( addIndexes ) {
+	//if ( addIndexes )
+	{
 		for ( t = 0; t < tHeight - 1; t++ )
 		{
 			for ( s = 0; s < sWidth - 1; s++ )
@@ -774,7 +852,7 @@ static void FillCloudySkySide( const int mins[2], const int maxs[2], qboolean ad
 	}
 }
 
-static void FillCloudBox( const shader_t *shader, int stage ) {
+static void FillCloudBox( const shader_t *shader ) {
 	int i;
 
 	for ( i = 0; i < 6; i++ )
@@ -873,7 +951,7 @@ static void FillCloudBox( const shader_t *shader, int stage ) {
 		}
 
 		// only add indexes for first stage
-		FillCloudySkySide( sky_mins_subd, sky_maxs_subd, ( stage == 0 ) );
+		FillCloudySkySide( sky_mins_subd, sky_maxs_subd );
 	}
 }
 
@@ -911,7 +989,8 @@ void R_BuildCloudData( shaderCommands_t *input )
 
 		#else // Spearmint test - Cowcat
 
-		FillCloudBox( shader, 0 );
+		if ( tess.xstages[0] )
+			FillCloudBox( shader );
 
 		#endif
 	}
@@ -1131,8 +1210,10 @@ void RB_StageIteratorSky( void ) {
 	// by the generic shader routine
 	R_BuildCloudData( &tess );
 
-	RB_StageIteratorGeneric();
+	if ( tess.numVertexes )
+		RB_StageIteratorGeneric();
 
+	#if 0
 	// draw the inner skybox
 	// Rafael - drawing inner skybox
 	if ( tess.shader->sky.innerbox[0] && tess.shader->sky.innerbox[0] != tr.defaultImage ) {
@@ -1148,6 +1229,7 @@ void RB_StageIteratorSky( void ) {
 		qglPopMatrix();
 	}
 	// Rafael - end
+	#endif
 
 	// back to normal depth range
 	qglDepthRange( 0.0, 1.0 );

@@ -75,6 +75,8 @@ void RB_CheckOverflow( int verts, int indexes ) {
 RB_AddQuadStampExt
 ==============
 */
+//static const float ORIGIN[3] = {0,0,0}; // test
+
 void RB_AddQuadStampExt( vec3_t origin, vec3_t left, vec3_t up, byte *color, float s1, float t1, float s2, float t2 ) {
 	vec3_t normal;
 	int ndx;
@@ -111,6 +113,7 @@ void RB_AddQuadStampExt( vec3_t origin, vec3_t left, vec3_t up, byte *color, flo
 
 	// constant normal all the way around
 	VectorSubtract( vec3_origin, backEnd.viewParms.or.axis[0], normal );
+	//VectorSubtract( ORIGIN, backEnd.viewParms.or.axis[0], normal );
 
 	tess.normal[ndx][0] = tess.normal[ndx + 1][0] = tess.normal[ndx + 2][0] = tess.normal[ndx + 3][0] = normal[0];
 	tess.normal[ndx][1] = tess.normal[ndx + 1][1] = tess.normal[ndx + 2][1] = tess.normal[ndx + 3][1] = normal[1];
@@ -605,8 +608,8 @@ void VectorArrayNormalize( vec4_t *normals, unsigned int count ) {
 
 #if idppc
 	{
-		float half = 0.5;
-		float one  = 1.0;
+		//float half = 0.5;
+		//float one  = 1.0;
 		float *components = (float *)normals;
 
 		// Vanilla PPC code, but since PPC has a reciprocal square root estimate instruction,
@@ -625,11 +628,15 @@ void VectorArrayNormalize( vec4_t *normals, unsigned int count ) {
 			B = x * x + y * y + z * z;
 
 #ifdef __GNUC__
-			asm ( "frsqrte %0,%1" : "=f" ( y0 ) : "f" ( B ) );
+			//asm ( "frsqrte %0,%1" : "=f" ( y0 ) : "f" ( B ) );
+			float c;
+			asm("fmsubs %0,%1,%2,%3\n" : "=f" (c) : "f" (1.5f), "f" (B), "f" (B));
+			asm("frsqrte %0,%1" : "=f" (y0) : "f" (B));
+			asm("fnmsubs %0,%1,%2,%3\n" : "=f" (y1) : "f" (c), "f" (y0 * y0), "f" (1.5f));
 #else
 			y0 = __frsqrte( B );
 #endif
-			y1 = y0 + half * y0 * ( one - B * y0 * y0 );
+			//y1 = y0 + half * y0 * ( one - B * y0 * y0 );
 
 			x = x * y1;
 			y = y * y1;
@@ -718,14 +725,15 @@ static void LerpMeshVertexes_scalar(md3Surface_t *surf, float backlerp)
 		for (vertNum=0 ; vertNum < numVerts ; vertNum++,
 			oldXyz += 4, newXyz += 4, oldNormals += 4, newNormals += 4, outXyz += 4, outNormal += 4) 
 		{
+			
+			#if 0
+
 			vec3_t uncompressedOldNormal, uncompressedNewNormal;
 
 			// interpolate the xyz
 			outXyz[0] = oldXyz[0] * oldXyzScale + newXyz[0] * newXyzScale;
 			outXyz[1] = oldXyz[1] * oldXyzScale + newXyz[1] * newXyzScale;
 			outXyz[2] = oldXyz[2] * oldXyzScale + newXyz[2] * newXyzScale;
-
-			#if 1 //
 
 			// FIXME: interpolate lat/long instead?
 			lat = ( newNormals[0] >> 8 ) & 0xff;
@@ -751,10 +759,15 @@ static void LerpMeshVertexes_scalar(md3Surface_t *surf, float backlerp)
 
 			#else
 
-			lat = myftol( ( ( ( oldNormals[0] >> 8 ) & 0xff ) * ( FUNCTABLE_SIZE/256 ) * newNormalScale ) +
+			// interpolate the xyz
+			outXyz[0] = oldXyz[0] * oldXyzScale + newXyz[0] * newXyzScale;
+			outXyz[1] = oldXyz[1] * oldXyzScale + newXyz[1] * newXyzScale;
+			outXyz[2] = oldXyz[2] * oldXyzScale + newXyz[2] * newXyzScale;
+
+			lat = (int)( ( ( ( oldNormals[0] >> 8 ) & 0xff ) * ( FUNCTABLE_SIZE/256 ) * newNormalScale ) +
 				( ( ( oldNormals[0] >> 8 ) & 0xff ) * ( FUNCTABLE_SIZE/256 ) * oldNormalScale ) );
 
-			lng = myftol( ( ( oldNormals[0] & 0xff ) * ( FUNCTABLE_SIZE/256 ) * newNormalScale ) + 
+			lng = (int)( ( ( oldNormals[0] & 0xff ) * ( FUNCTABLE_SIZE/256 ) * newNormalScale ) + 
 				( ( oldNormals[0] & 0xff ) * ( FUNCTABLE_SIZE/256 ) * oldNormalScale ) );
 
 			outNormal[0] = tr.sinTable[ ( lat+(FUNCTABLE_SIZE/4 ) ) & FUNCTABLE_MASK ] * tr.sinTable[lng];
@@ -766,7 +779,8 @@ static void LerpMeshVertexes_scalar(md3Surface_t *surf, float backlerp)
 //			VectorNormalize (outNormal);
 		}
 
-    		VectorArrayNormalize((vec4_t *)tess.normal[tess.numVertexes], numVerts);
+		// not for lat / long fix
+    		//VectorArrayNormalize((vec4_t *)tess.normal[tess.numVertexes], numVerts);
    	}
 }
 

@@ -170,6 +170,7 @@ static int R_DlightFace( srfSurfaceFace_t *face, int dlightBits ) {
 		}
 		dl = &tr.refdef.dlights[i];
 		d = DotProduct( dl->origin, face->plane.normal ) - face->plane.dist;
+		//d = DotProduct( dl->transformed, face->plane.normal ) - face->plane.dist; // future fix ? - Cowcat
 		if ( d < -dl->radius || d > dl->radius ) {
 			// dlight doesn't reach the plane
 			dlightBits &= ~( 1 << i );
@@ -659,6 +660,9 @@ static void R_MarkLeaves( void ) {
 	vis = R_ClusterPVS( tr.viewCluster );
 
 	for ( i = 0,leaf = tr.world->nodes ; i < tr.world->numnodes ; i++, leaf++ ) {
+
+		#if 1
+
 		cluster = leaf->cluster;
 		if ( cluster < 0 || cluster >= tr.world->numClusters ) {
 			continue;
@@ -668,6 +672,27 @@ static void R_MarkLeaves( void ) {
 		if ( !( vis[cluster >> 3] & ( 1 << ( cluster & 7 ) ) ) ) {
 			continue;
 		}
+		
+		#else
+
+		if ( tr.world->vis )
+		{
+			cluster = leaf->cluster;
+
+			if ( cluster >= 0 && cluster < tr.world->numClusters )
+			{
+				// check general pvs
+				if ( !( vis[cluster >> 3] & ( 1 << ( cluster & 7 ) ) ) )
+				{
+					continue;
+				}
+			}
+		}
+
+		if ( leaf->area == -1 )
+			continue;
+
+		#endif
 
 		// check for door connection
 		if ( ( tr.refdef.areamask[leaf->area >> 3] & ( 1 << ( leaf->area & 7 ) ) ) ) {

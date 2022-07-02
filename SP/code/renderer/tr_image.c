@@ -533,7 +533,7 @@ Operates in place, quartering the size of the texture
 ================
 */
 #if !defined(AMIGAOS)
-
+//#if 1
 static float R_RMSE( byte *in, int width, int height ) {
 	int i, j;
 	float out, rmse, rtemp;
@@ -750,7 +750,7 @@ static void Upload32(   unsigned *data,
 	//float rMax = 0, gMax = 0, bMax = 0; // Cowcat
 
 #if !defined(AMIGAOS)
-
+//#if 1
 	static int rmse_saved = 0;
 #ifndef USE_BLOOM
 	float rmse;
@@ -831,7 +831,7 @@ static void Upload32(   unsigned *data,
 	}
 
 #if !defined(AMIGAOS)
-
+//#if 1
 #ifndef USE_BLOOM
 	rmse = R_RMSE( (byte *)data, width, height );
 
@@ -933,7 +933,6 @@ static void Upload32(   unsigned *data,
 		// select proper internal format
 		if ( samples == 3 )
 		{
-
 			if(r_greyscale->integer)
 			{
 #ifndef USE_OPENGLES
@@ -1774,11 +1773,7 @@ void R_DeleteTextures( void ) {
 	for ( i = 0; i < tr.numImages ; i++ ) {
 		qglDeleteTextures( 1, &tr.images[i]->texnum );
 	}
-	Com_Memset( tr.images, 0, sizeof( tr.images ) );
 
-	tr.numImages = 0;
-
-	Com_Memset( glState.currenttextures, 0, sizeof( glState.currenttextures ) );
 	if ( qglActiveTextureARB ) {
 		GL_SelectTexture( 1 );
 		qglBindTexture( GL_TEXTURE_2D, 0 );
@@ -1787,6 +1782,13 @@ void R_DeleteTextures( void ) {
 	} else {
 		qglBindTexture( GL_TEXTURE_2D, 0 );
 	}
+
+	Com_Memset( tr.images, 0, sizeof( tr.images ) );
+
+	tr.numImages = 0;
+
+	Com_Memset( glState.currenttextures, 0, sizeof( glState.currenttextures ) );
+	
 }
 
 /*

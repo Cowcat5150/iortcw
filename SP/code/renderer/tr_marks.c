@@ -660,6 +660,7 @@ int R_MarkFragments( int orientation, const vec3_t *points, const vec3_t project
 			}
 		} else if ( *surfaces[i] == SF_FACE )     {
 			extern float VectorDistance( vec3_t v1, vec3_t v2 );
+			//extern float VectorDistance( vec2_t v1, vec2_t v2 ); // fix ? - Cowcat
 			vec3_t axis[3];
 			float texCoordScale, dot;
 			vec3_t originalPoints[4];

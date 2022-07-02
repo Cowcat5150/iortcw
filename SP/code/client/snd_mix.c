@@ -35,6 +35,8 @@ short*   snd_out;
 
 void S_WriteLinearBlastStereo16 (void)
 {
+	#if 0
+
 	int		i;
 	int		val;
 
@@ -56,6 +58,30 @@ void S_WriteLinearBlastStereo16 (void)
 		else
 			snd_out[i+1] = val;
 	}
+
+	#else
+
+	int	i;
+	int	val;
+	int	*src = snd_p;
+	short	*dst = snd_out;
+
+	for ( i=0 ; i<snd_linear_count ; i++, src++, dst++ )
+	{
+		val = *src>>8;
+
+		if (val > 32767)
+			*dst = 32767;
+
+		else if (val < -32768)
+			*dst = -32768;
+
+		else
+			*dst = val;
+	}
+
+		
+	#endif
 }
 #elif defined(__GNUC__)
 // uses snd_mixa.s

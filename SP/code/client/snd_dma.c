@@ -203,6 +203,7 @@ void S_ChannelFree(channel_t *v) {
 }
 
 channel_t*	S_ChannelMalloc( void ) {
+//channel_t*	S_ChannelMalloc( int allocTime ) { // Cowcat
 	channel_t *v;
 	if (freelist == NULL) {
 		return NULL;
@@ -214,6 +215,7 @@ channel_t*	S_ChannelMalloc( void ) {
 	v = freelist;
 	freelist = *(channel_t **)freelist;
 	v->allocTime = Com_Milliseconds();
+	//v->allocTime = allocTime; // Cowcat
 	return v;
 }
 
@@ -253,7 +255,13 @@ static long S_HashSFXName(const char *name) {
 	hash = 0;
 	i = 0;
 	while (name[i] != '\0') {
+	
+		#if defined(AMIGAOS) || defined (__GCC__)
+		letter = tolower((unsigned char)name[i]);
+		#else
 		letter = tolower(name[i]);
+		#endif
+
 		if (letter =='.') break;				// don't include extension
 		if (letter =='\\') letter = '/';		// damn path names
 		hash+=(long)(letter)*(i+119);
@@ -649,6 +657,7 @@ static void S_Base_MainStartSound( vec3_t origin, int entityNum, int entchannel,
 	}
 
 	time = Com_Milliseconds();
+	//time = s_soundtime; // Cowcat
 
 //	Com_Printf("playing %s\n", sfx->soundName);
 	// pick a channel to play on
@@ -761,6 +770,7 @@ static void S_Base_MainStartSound( vec3_t origin, int entityNum, int entchannel,
 
 	if ( !ch ) {
 		ch = S_ChannelMalloc();
+		//ch = S_ChannelMalloc(time); // Cowcat
 	}
 //----(SA)	end
 
@@ -786,7 +796,7 @@ static void S_Base_MainStartSound( vec3_t origin, int entityNum, int entchannel,
 		}
 
 		if (chosen == -1)
-	{
+		{
 			ch = s_channels;
 
 			for ( i = 0 ; i < MAX_CHANNELS ; i++, ch++ )
@@ -1124,6 +1134,7 @@ void S_AddLoopSounds (void) {
 	numLoopChannels = 0;
 
 	time = Com_Milliseconds();
+	//time = s_soundtime; // Cowcat
 
 	loopFrame++;
 	for ( i = 0 ; i < MAX_GENTITIES ; i++) {
@@ -1855,6 +1866,7 @@ void S_FreeOldestSound( void ) {
 	sndBuffer	*buffer, *nbuffer;
 
 	oldest = Com_Milliseconds();
+	//oldest = s_soundtime; // Cowcat
 	used = 0;
 
 	for (i=1 ; i < s_numSfx ; i++) {

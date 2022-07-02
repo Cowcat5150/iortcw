@@ -429,7 +429,8 @@ The cgame module is making a system call
 
 #define round roundf // Cowcat
 
-intptr_t CL_CgameSystemCalls( intptr_t *args ) {
+intptr_t CL_CgameSystemCalls( intptr_t *args )
+{
 	switch ( args[0] ) {
 	case CG_PRINT:
 		Com_Printf( "%s", (const char*)VMA(1) );
@@ -732,7 +733,9 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 	case CG_REAL_TIME:
 		return Com_RealTime( VMA( 1 ) );
 	case CG_SNAPVECTOR:
+		
 		Q_SnapVector(VMA(1));
+
 		return 0;
 
 	case CG_SENDMOVESPEEDSTOGAME:

@@ -300,7 +300,8 @@ The module is making a system call
 
 #define round roundf // Cowcat
 
-intptr_t SV_GameSystemCalls( intptr_t *args ) {
+intptr_t SV_GameSystemCalls( intptr_t *args )
+{
 	switch ( args[0] ) {
 	case G_PRINT:
 		Com_Printf( "%s", (const char*)VMA(1) );
@@ -443,7 +444,9 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 	case G_REAL_TIME:
 		return Com_RealTime( VMA( 1 ) );
 	case G_SNAPVECTOR:
+		
 		Q_SnapVector(VMA(1));
+
 		return 0;
 	case G_GETTAG:
 		return SV_GetTag( args[1], VMA( 2 ), VMA( 3 ) );

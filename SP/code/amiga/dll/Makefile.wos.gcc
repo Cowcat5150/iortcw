@@ -4,10 +4,10 @@ ARCHIVE = libdll.a
 
 OTHER = 
 
-CC = gcc --specs=warpup
+CC = ppc-morphos-gcc-10 --specs=warpup
 
-AR = ar
-RANLIB = ranlib
+AR = ppc-morphos-gcc-ar-10
+RANLIB = ppc-morphos-gcc-ranlib-10
 
 CODEGEN = -Wall -noixemul -fomit-frame-pointer -ffast-math -fno-strict-aliasing
 OPTIMIZE = -O2 

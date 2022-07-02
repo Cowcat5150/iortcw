@@ -3,19 +3,11 @@
 
 #ifdef __DLL_LIB_BUILD
 
-#ifdef __VBCC__
-#pragma amiga-align
-#elif defined(WARPUP)
-#pragma pack(2)
-#endif
+#pragma pack(push,2)
 
 #include <exec/exec.h>
 
-#ifdef __VBCC__
-#pragma default align
-#elif defined (WARPUP)
-#pragma pack()
-#endif
+#pragma pack(pop)
 
 #endif
 
@@ -73,6 +65,7 @@ void *dllInternalLoadLibrary(char *filename,char *portname,int raiseusecount);
 ** Typedefs for function vectors.
 ** Any DLL implementor must deliver these functions.
 */
+
 //Cowcat
 /*
 typedef void* (*dll_tFindResourceFn)(int, char*);
@@ -126,16 +119,18 @@ typedef enum
 #else //not VBCC
 
 #ifdef __GNUC__
-#ifdef __PPC
+#ifdef __PPC__
 #define DLLSTACK_DEFAULT DLLSTACK_SYSV
 #else
 #define DLLSTACK_DEFAULT DLLSTACK_EGCS
 #endif
+
 #else //not GCC
 
 #ifdef __SASC__
 #define DLLSTACK_DEFAULT DLLSTACK_SAS
 #endif
+
 #endif //GCC
 #endif //VBCC
 #endif //STORMC
@@ -217,12 +212,17 @@ typedef struct dll_sMessage
 
 struct dll_sInstance
 {
-	struct MsgPort      	*dllPort;
-	dll_tStackType      	StackType;
+	#if defined(__PPC__)
+	struct MsgPortPPC	*dllPort;
+	#else
+	struct MsgPort		*dllPort;
+	#endif
 
-	//dll_tFindResourceFn 	FindResource; // Cowcat
+	dll_tStackType		StackType;
+
+	//dll_tFindResourceFn	FindResource; // Cowcat
 	//dll_tLoadResourceFn	LoadResource;
-	//dll_tFreeResourceFn 	FreeResource;
+	//dll_tFreeResourceFn	FreeResource;
 
 	// ... Might grow
 };

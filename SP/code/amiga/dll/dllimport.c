@@ -19,12 +19,12 @@ int dllImportSymbols()
 		void *sym;
 		void *h = dllInternalLoadLibrary(symtable->DLLFileName,symtable->DLLPortName,0L);
 
-		if(!h)
+		if( !h )
 			return 0L;
 
 		sym = dllGetProcAddress(h,symtable->SymbolName);
 
-		if(!sym)
+		if( !sym )
 			return 0L;
 
 		*symtable->SymbolPointer=sym;
